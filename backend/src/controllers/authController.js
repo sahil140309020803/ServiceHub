@@ -197,3 +197,75 @@ export const getMe = async (req, res) => {
         });
     }
 };
+
+/**
+ * Update Current User Profile
+ * PUT /api/auth/update
+ */
+export const updateMe = async (req, res) => {
+    try {
+        const { fullName, email, phoneNumber } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        // Email uniqueness check if email is updated
+        if (email && email.toLowerCase().trim() !== user.email.toLowerCase()) {
+            const emailExists = await User.findOne({ email: email.toLowerCase().trim() });
+            if (emailExists) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email is already registered by another account",
+                });
+            }
+            user.email = email.toLowerCase().trim();
+        }
+
+        // Phone number uniqueness check if phone is updated
+        if (phoneNumber && phoneNumber.trim() !== user.phoneNumber) {
+            const phoneExists = await User.findOne({ phoneNumber: phoneNumber.trim() });
+            if (phoneExists) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Phone number is already registered by another account",
+                });
+            }
+            user.phoneNumber = phoneNumber.trim();
+        }
+
+        if (fullName) {
+            user.fullName = fullName.trim();
+        }
+
+        await user.save();
+
+        const updatedUser = {
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            profileImage: user.profileImage,
+            isActive: user.isActive,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+        };
+
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            data: updatedUser,
+        });
+    } catch (error) {
+        console.error("Update User Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to update profile",
+        });
+    }
+};

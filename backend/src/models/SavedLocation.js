@@ -14,6 +14,12 @@ const savedLocationSchema = new mongoose.Schema(
             trim: true,
         },
 
+        label: {
+            type: String,
+            enum: ["Home", "Work", "Other"],
+            default: "Home",
+        },
+
         latitude: Number,
 
         longitude: Number,

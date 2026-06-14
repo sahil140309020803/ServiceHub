@@ -3,6 +3,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/authRoutes.js';
+import categoryRoutes from './src/routes/categoryRoutes.js';
+import workerRoutes from './src/routes/workerRoutes.js';
+import reviewRoutes from './src/routes/reviewRoutes.js';
+import favoriteRoutes from './src/routes/favoriteRoutes.js';
+import extensionRoutes from './src/routes/extensionRoutes.js';
+import galleryRoutes from './src/routes/gallery.routes.js';
 
 // Configuring environment variables
 dotenv.config();
@@ -20,6 +26,12 @@ app.use(express.urlencoded({ extended: true })); // Allows to parse URL-encoded 
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/workers', workerRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/extensions', extensionRoutes);
+app.use('/api/gallery', galleryRoutes);
 
 
 // Health Check Route

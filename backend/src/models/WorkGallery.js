@@ -19,6 +19,16 @@ const workGallerySchema = new mongoose.Schema(
         },
 
         description: String,
+
+        viewsCount: {
+            type: Number,
+            default: 0,
+        },
+
+        likesCount: {
+            type: Number,
+            default: 0,
+        },
     },
     {
         timestamps: true,
