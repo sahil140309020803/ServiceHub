@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+
+# Environment Variables
+.env
+.env.local
+
+# Expo
+.expo
+.expo-shared
+
+# Build Files
+dist
+build
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+
+# VS Code
+.vscode
+
+# OS Files
+.DS_Store
+Thumbs.db
