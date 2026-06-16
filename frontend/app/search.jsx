@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
     Text,
@@ -29,23 +29,65 @@ export default function SearchScreen() {
     const [minRating, setMinRating] = useState(0);
     const [minExperience, setMinExperience] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState("");
-    
+
     // UI Panel States
     const [showFilters, setShowFilters] = useState(false);
     const [categories, setCategories] = useState([]);
-    
+
     // Data & Pagination States
     const [workers, setWorkers] = useState([]);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalWorkers, setTotalWorkers] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(params.query ? true : false);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState(null);
 
     // Search History States
     const [recentSearches, setRecentSearches] = useState([]);
+    const [isFocused, setIsFocused] = useState(false);
+    const searchInputRef = useRef(null);
+
+    // Popular Searches Predefined List
+    const popularSearches = [
+        { name: "Electrician", icon: "flash-outline", color: "#fbbf24" },
+        { name: "Plumber", icon: "water-outline", color: "#38bdf8" },
+        { name: "Home Cleaning", icon: "sparkles-outline", color: "#c084fc" },
+        { name: "Painter", icon: "brush-outline", color: "#f87171" },
+        { name: "Carpenter", icon: "hammer-outline", color: "#fb923c" },
+        { name: "AC Repair", icon: "snow-outline", color: "#60a5fa" },
+        { name: "RO Service", icon: "water-outline", color: "#2dd4bf" },
+        { name: "Pest Control", icon: "bug-outline", color: "#34d399" }
+    ];
+
+    // Helper to get category/query specific icon
+    const getQueryIconName = (text) => {
+        const lower = text.toLowerCase();
+        if (lower.includes("elect")) return "flash-outline";
+        if (lower.includes("plumb")) return "water-outline";
+        if (lower.includes("paint")) return "brush-outline";
+        if (lower.includes("clean")) return "sparkles-outline";
+        if (lower.includes("carpenter")) return "hammer-outline";
+        if (lower.includes("ac") || lower.includes("air")) return "snow-outline";
+        if (lower.includes("ro") || lower.includes("water")) return "water-outline";
+        if (lower.includes("pest") || lower.includes("bug")) return "bug-outline";
+        return "search-outline";
+    };
+
+    // Helper to get color for icons
+    const getQueryIconColor = (text) => {
+        const lower = text.toLowerCase();
+        if (lower.includes("elect")) return "#fbbf24";
+        if (lower.includes("plumb")) return "#38bdf8";
+        if (lower.includes("paint")) return "#f87171";
+        if (lower.includes("clean")) return "#c084fc";
+        if (lower.includes("carpenter")) return "#fb923c";
+        if (lower.includes("ac") || lower.includes("air")) return "#60a5fa";
+        if (lower.includes("ro") || lower.includes("water")) return "#2dd4bf";
+        if (lower.includes("pest") || lower.includes("bug")) return "#34d399";
+        return "#6366f1";
+    };
 
     // Fetch categories on mount
     useEffect(() => {
@@ -86,37 +128,10 @@ export default function SearchScreen() {
 
     const handleRecentSearchClick = (term) => {
         setSearchQuery(term);
-        
-        // Execute search query directly
-        const queryParams = {
-            page: 1,
-            limit: 10,
-            search: term
-        };
-        if (selectedCategory) queryParams.category = selectedCategory;
-        if (city.trim()) queryParams.city = city.trim();
-        if (minRating > 0) queryParams.rating = minRating;
-        if (minExperience > 0) queryParams.experience = minExperience;
-
-        if (location) {
-            queryParams.lat = location.latitude;
-            queryParams.lng = location.longitude;
-        }
-
-        setIsLoading(true);
-        api.get("/api/workers", { params: queryParams })
-            .then((res) => {
-                if (res.data.success) {
-                    setWorkers(res.data.data || []);
-                    setPage(1);
-                    setTotalPages(res.data.pagination?.totalPages || 1);
-                    setTotalWorkers(res.data.pagination?.totalWorkers || 0);
-                }
-            })
-            .catch((err) => console.error("Error searching via recent term:", err))
-            .finally(() => setIsLoading(false));
-
+        setIsFocused(false);
+        searchInputRef.current?.blur();
         saveSearchToHistory(term);
+        router.push(`/category-workers?searchQuery=${encodeURIComponent(term)}&categoryName=${encodeURIComponent(term)}`);
     };
 
     const handleClearHistory = async () => {
@@ -125,6 +140,15 @@ export default function SearchScreen() {
             setRecentSearches([]);
         } catch (err) {
             console.error("Error clearing search history:", err);
+        }
+    };
+
+    const handleDeleteHistoryItem = async (historyId) => {
+        try {
+            await api.delete(`/api/extensions/search-history/${historyId}`);
+            setRecentSearches((prev) => prev.filter((item) => item._id !== historyId));
+        } catch (err) {
+            console.error("Error deleting specific search history item:", err);
         }
     };
 
@@ -158,7 +182,7 @@ export default function SearchScreen() {
             }
 
             const response = await api.get("/api/workers", { params: queryParams });
-            
+
             if (response.data.success) {
                 const fetchedData = response.data.data || [];
                 const pag = response.data.pagination || { page: 1, totalPages: 1, totalWorkers: 0 };
@@ -187,7 +211,14 @@ export default function SearchScreen() {
 
     // Initial load on mount or when route param changes
     useEffect(() => {
-        fetchWorkers(1);
+        if (params.query) {
+            const timer = setTimeout(() => {
+                handleRecentSearchClick(params.query);
+            }, 50);
+            return () => clearTimeout(timer);
+        } else {
+            setIsLoading(false);
+        }
         if (user) {
             fetchSearchHistory();
         }
@@ -195,9 +226,9 @@ export default function SearchScreen() {
 
     // Trigger Search
     const handleSearch = () => {
-        fetchWorkers(1);
-        if (user && searchQuery.trim()) {
+        if (searchQuery.trim()) {
             saveSearchToHistory(searchQuery);
+            router.push(`/category-workers?searchQuery=${encodeURIComponent(searchQuery.trim())}&categoryName=${encodeURIComponent(searchQuery.trim())}`);
         }
     };
 
@@ -283,7 +314,7 @@ export default function SearchScreen() {
                             </Text>
                         </View>
                     )}
-                    
+
                     {item.isVerified && (
                         <View className="absolute bottom-[-4] right-[-4] bg-indigo-500 rounded-full p-0.5 border-2 border-slate-900">
                             <Ionicons name="checkmark-circle" size={14} color="white" />
@@ -298,7 +329,7 @@ export default function SearchScreen() {
                             <Text className="text-white font-extrabold text-base flex-1 mr-1" numberOfLines={1}>
                                 {fullName}
                             </Text>
-                            
+
                             <View className={`px-2 py-0.5 rounded-full border ${availability.bg}`}>
                                 <Text className={`text-[10px] font-bold uppercase tracking-wider ${availability.color}`}>
                                     {availability.text}
@@ -344,6 +375,29 @@ export default function SearchScreen() {
         );
     };
 
+    // Filter services and skills for Screenshot 3 suggestions
+    const getServiceSuggestions = () => {
+        if (!searchQuery.trim()) return [];
+        const matchedCats = categories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchedSkills = [];
+        workers.forEach(w => {
+            if (w.skills) {
+                w.skills.forEach(s => {
+                    if (s.toLowerCase().includes(searchQuery.toLowerCase()) && !matchedSkills.includes(s)) {
+                        matchedSkills.push(s);
+                    }
+                });
+            }
+        });
+        return [
+            ...matchedCats.map(c => ({ name: c.name, type: "category", id: c._id })),
+            ...matchedSkills.map(s => ({ name: s, type: "skill" }))
+        ].slice(0, 5);
+    };
+
+    const matchedServices = getServiceSuggestions();
+    const showSuggestions = isFocused && searchQuery.trim() !== "";
+
     return (
         <SafeAreaView className="flex-1 bg-slate-950">
             <StatusBar barStyle="light-content" />
@@ -352,39 +406,70 @@ export default function SearchScreen() {
             <View className="px-5 pt-3 pb-2 border-b border-slate-900 bg-slate-950">
                 <View className="flex-row items-center">
                     <TouchableOpacity
-                        onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/Home")}
+                        onPress={() => {
+                            if (isFocused) {
+                                setIsFocused(false);
+                                searchInputRef.current?.blur();
+                            } else {
+                                router.canGoBack() ? router.back() : router.replace("/(tabs)/Home");
+                            }
+                        }}
                         className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full items-center justify-center mr-3"
                     >
                         <Ionicons name="arrow-back" size={20} color="white" />
                     </TouchableOpacity>
-                    
-                    {/* Search Input Box */}
+
+                    {/* Search Input Box with Mic */}
                     <View className="flex-1 flex-row items-center bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
                         <Ionicons name="search" size={18} color="#64748b" className="mr-2" />
                         <TextInput
+                            ref={searchInputRef}
                             value={searchQuery}
-                            onChangeText={setSearchQuery}
-                            onSubmitEditing={handleSearch}
-                            placeholder="Search by name, skill, profession..."
+                            autoFocus={true}
+                            onChangeText={(text) => {
+                                setSearchQuery(text);
+                                if (text.trim()) {
+                                    // Trigger instant search for suggestions
+                                    api.get("/api/workers", { params: { search: text.trim() } })
+                                        .then(res => {
+                                            if (res.data.success) {
+                                                setWorkers(res.data.data || []);
+                                            }
+                                        }).catch(err => console.error("Error fetching suggestions:", err));
+                                }
+                            }}
+                            onFocus={() => {
+                                setIsFocused(true);
+                                if (user) {
+                                    fetchSearchHistory();
+                                }
+                            }}
+                            onSubmitEditing={() => {
+                                handleSearch();
+                                setIsFocused(false);
+                            }}
+                            placeholder="Search services or professionals..."
                             placeholderTextColor="#64748b"
                             className="flex-1 text-white text-sm py-1"
                             returnKeyType="search"
                         />
                         {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => setSearchQuery("")} className="p-1">
+                            <TouchableOpacity onPress={() => setSearchQuery("")} className="p-1 mr-1">
                                 <Ionicons name="close-circle" size={16} color="#64748b" />
                             </TouchableOpacity>
                         )}
+                        <TouchableOpacity className="p-1">
+                            <Ionicons name="mic-outline" size={18} color="#64748b" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Filter Drawer Toggle */}
                     <TouchableOpacity
                         onPress={() => setShowFilters(!showFilters)}
-                        className={`w-10 h-10 border rounded-xl items-center justify-center ml-3 relative ${
-                            showFilters || isAnyFilterActive()
-                                ? "bg-indigo-600/20 border-indigo-500"
-                                : "bg-slate-900 border-slate-800"
-                        }`}
+                        className={`w-10 h-10 border rounded-xl items-center justify-center ml-3 relative ${showFilters || isAnyFilterActive()
+                            ? "bg-indigo-600/20 border-indigo-500"
+                            : "bg-slate-900 border-slate-800"
+                            }`}
                     >
                         <Ionicons
                             name="options-outline"
@@ -396,34 +481,6 @@ export default function SearchScreen() {
                         )}
                     </TouchableOpacity>
                 </View>
-
-                {/* Recent Searches Row */}
-                {user && recentSearches.length > 0 && (
-                    <View className="flex-row items-center mt-3 mb-1">
-                        <Text className="text-slate-400 text-xs font-bold mr-2">Recent:</Text>
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ gap: 6 }}
-                            className="flex-row"
-                        >
-                            {recentSearches.map((item) => (
-                                <TouchableOpacity
-                                    key={item._id}
-                                    onPress={() => handleRecentSearchClick(item.searchText)}
-                                    className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full active:opacity-85"
-                                >
-                                    <Text className="text-slate-300 text-xs font-semibold">
-                                        {item.searchText}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                            <TouchableOpacity onPress={handleClearHistory} className="px-2 py-1 justify-center">
-                                <Text className="text-slate-500 text-xs font-bold">Clear</Text>
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View>
-                )}
 
                 {/* Inline active filter badges display */}
                 {isAnyFilterActive() && (
@@ -488,7 +545,6 @@ export default function SearchScreen() {
                 <View className="bg-slate-900 border-b border-slate-800 p-5">
                     <Text className="text-white font-extrabold text-base mb-3">Filters</Text>
                     <ScrollView showsVerticalScrollIndicator={false} className="max-h-[320px]">
-                        
                         {/* Service Category */}
                         <Text className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Category</Text>
                         <ScrollView
@@ -499,11 +555,10 @@ export default function SearchScreen() {
                         >
                             <TouchableOpacity
                                 onPress={() => setSelectedCategory("")}
-                                className={`px-4 py-2 rounded-xl border ${
-                                    selectedCategory === ""
-                                        ? "bg-indigo-600 border-indigo-500"
-                                        : "bg-slate-950 border-slate-800"
-                                }`}
+                                className={`px-4 py-2 rounded-xl border ${selectedCategory === ""
+                                    ? "bg-indigo-600 border-indigo-500"
+                                    : "bg-slate-950 border-slate-800"
+                                    }`}
                             >
                                 <Text className={`text-xs font-bold ${selectedCategory === "" ? "text-white" : "text-slate-400"}`}>
                                     All
@@ -513,11 +568,10 @@ export default function SearchScreen() {
                                 <TouchableOpacity
                                     key={cat._id}
                                     onPress={() => setSelectedCategory(cat._id)}
-                                    className={`px-4 py-2 rounded-xl border ${
-                                        selectedCategory === cat._id
-                                            ? "bg-indigo-600 border-indigo-500"
-                                            : "bg-slate-950 border-slate-800"
-                                    }`}
+                                    className={`px-4 py-2 rounded-xl border ${selectedCategory === cat._id
+                                        ? "bg-indigo-600 border-indigo-500"
+                                        : "bg-slate-950 border-slate-800"
+                                        }`}
                                 >
                                     <Text className={`text-xs font-bold ${selectedCategory === cat._id ? "text-white" : "text-slate-400"}`}>
                                         {cat.name}
@@ -545,11 +599,10 @@ export default function SearchScreen() {
                                 <TouchableOpacity
                                     key={star}
                                     onPress={() => setMinRating(star)}
-                                    className={`flex-row items-center px-3 py-2 rounded-xl border ${
-                                        minRating === star
-                                            ? "bg-indigo-600 border-indigo-500"
-                                            : "bg-slate-950 border-slate-800"
-                                    }`}
+                                    className={`flex-row items-center px-3 py-2 rounded-xl border ${minRating === star
+                                        ? "bg-indigo-600 border-indigo-500"
+                                        : "bg-slate-950 border-slate-800"
+                                        }`}
                                 >
                                     <Text className={`text-xs font-extrabold mr-1 ${minRating === star ? "text-white" : "text-slate-400"}`}>
                                         {star}
@@ -574,11 +627,10 @@ export default function SearchScreen() {
                                 <TouchableOpacity
                                     key={exp}
                                     onPress={() => setMinExperience(exp)}
-                                    className={`px-3 py-2 rounded-xl border ${
-                                        minExperience === exp
-                                            ? "bg-indigo-600 border-indigo-500"
-                                            : "bg-slate-950 border-slate-800"
-                                    }`}
+                                    className={`px-3 py-2 rounded-xl border ${minExperience === exp
+                                        ? "bg-indigo-600 border-indigo-500"
+                                        : "bg-slate-950 border-slate-800"
+                                        }`}
                                 >
                                     <Text className={`text-xs font-bold ${minExperience === exp ? "text-white" : "text-slate-400"}`}>
                                         {exp === 0 ? "Any" : `${exp}+ Yrs`}
@@ -606,68 +658,219 @@ export default function SearchScreen() {
                 </View>
             )}
 
-            {/* Workers Result List */}
-            {isLoading ? (
-                <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="#6366f1" />
-                </View>
-            ) : error ? (
-                <View className="flex-1 items-center justify-center px-6">
-                    <Ionicons name="alert-circle-outline" size={48} color="#f43f5e" />
-                    <Text className="text-white text-base font-bold mt-4 text-center">{error}</Text>
-                    <TouchableOpacity
-                        onPress={() => fetchWorkers(1)}
-                        className="mt-6 bg-indigo-600 px-6 py-3 rounded-xl"
-                    >
-                        <Text className="text-white font-bold">Retry</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : workers.length === 0 ? (
-                <View className="flex-1 items-center justify-center px-6">
-                    <View className="w-20 h-20 bg-slate-900 border border-slate-800 rounded-full items-center justify-center mb-4">
-                        <Ionicons name="search-outline" size={32} color="#64748b" />
+            {/* Content Display Switch */}
+            {searchQuery.trim() === "" ? (
+                /* SCREEN 1: Empty Search Dashboard layout */
+                <ScrollView
+                    className="flex-1 px-5"
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Recent Searches */}
+                    {user && recentSearches.length > 0 && (
+                        <View className="mt-5">
+                            <View className="flex-row justify-between items-center mb-3">
+                                <Text className="text-white font-extrabold text-base">Recent Searches</Text>
+                                <TouchableOpacity onPress={handleClearHistory} className="py-1 px-2">
+                                    <Text className="text-indigo-400 text-xs font-bold">Clear All</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View className="flex-row flex-wrap gap-2">
+                                {recentSearches.map((item) => (
+                                    <View key={item._id} className="flex-row items-center bg-slate-900 border border-slate-800 px-3.5 py-2 rounded-full">
+                                        <TouchableOpacity
+                                            onPress={() => handleRecentSearchClick(item.searchText)}
+                                            className="flex-row items-center"
+                                        >
+                                            <Ionicons name={getQueryIconName(item.searchText)} size={14} color={getQueryIconColor(item.searchText)} className="mr-1.5" />
+                                            <Text className="text-slate-200 text-xs font-semibold">{item.searchText}</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => handleDeleteHistoryItem(item._id)}
+                                            className="ml-2 pl-2 border-l border-slate-800"
+                                        >
+                                            <Ionicons name="close" size={14} color="#64748b" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Popular Searches */}
+                    <View className="mt-6">
+                        <Text className="text-white font-extrabold text-base mb-3.5">Popular Searches 🔥</Text>
+                        <View className="flex-row flex-wrap justify-between gap-y-3">
+                            {popularSearches.map((item, idx) => (
+                                <TouchableOpacity
+                                    key={idx}
+                                    onPress={() => handleRecentSearchClick(item.name)}
+                                    className="w-[48.5%] bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex-row items-center active:bg-slate-800"
+                                >
+                                    <View className="w-8 h-8 rounded-full bg-slate-950 border border-slate-850 items-center justify-center mr-2.5">
+                                        <Ionicons name={item.icon} size={16} color={item.color} />
+                                    </View>
+                                    <Text className="text-slate-200 text-xs font-bold">{item.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
-                    <Text className="text-white text-lg font-bold text-center">
-                        No professionals found
-                    </Text>
-                    <Text className="text-slate-400 text-sm mt-1 text-center max-w-xs">
-                        Try adjusting your search queries or resetting active filters to discover experts.
-                    </Text>
-                    <TouchableOpacity
-                        onPress={handleResetFilters}
-                        className="mt-6 bg-slate-900 border border-slate-800 px-6 py-3 rounded-xl"
-                    >
-                        <Text className="text-slate-200 font-semibold">Clear Search & Filters</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <View className="flex-1">
-                    <View className="px-5 py-3 flex-row justify-between items-center bg-slate-950">
-                        <Text className="text-slate-400 text-xs font-semibold">
-                            Showing {workers.length} of {totalWorkers} professionals
-                        </Text>
-                    </View>
-                    
-                    <FlatList
-                        data={workers}
-                        keyExtractor={(item) => item._id}
-                        renderItem={renderWorkerItem}
-                        contentContainerStyle={{ paddingHorizontal: 20, pb: 40 }}
-                        showsVerticalScrollIndicator={false}
-                        onRefresh={handleRefresh}
-                        refreshing={isRefreshing}
-                        onEndReached={handleLoadMore}
-                        onEndReachedThreshold={0.3}
-                        ListFooterComponent={() => {
-                            if (!isLoadingMore) return null;
-                            return (
-                                <View className="py-4 items-center justify-center">
-                                    <ActivityIndicator size="small" color="#6366f1" />
+
+                    {/* Browse Categories */}
+                    <View className="mt-6 mb-8">
+                        <View className="flex-row justify-between items-center mb-3">
+                            <Text className="text-white font-extrabold text-base">Browse Categories</Text>
+                            <TouchableOpacity onPress={() => setSelectedCategory("")}>
+                                <Text className="text-indigo-400 text-xs font-bold">View All</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ gap: 14 }}
+                            className="flex-row mt-1"
+                        >
+                            {categories.map((cat) => (
+                                <TouchableOpacity
+                                    key={cat._id}
+                                    onPress={() => router.push(`/category-workers?categoryId=${cat._id}&categoryName=${cat.name}`)}
+                                    className="items-center"
+                                >
+                                    <View className="w-14 h-14 rounded-full bg-slate-900 border border-slate-800 items-center justify-center mb-1.5">
+                                        <Ionicons name={getQueryIconName(cat.name)} size={22} color={getQueryIconColor(cat.name)} />
+                                    </View>
+                                    <Text className="text-slate-300 text-[10px] font-semibold">{cat.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                            <TouchableOpacity
+                                onPress={handleResetFilters}
+                                className="items-center"
+                            >
+                                <View className="w-14 h-14 rounded-full bg-slate-900 border border-slate-800 items-center justify-center mb-1.5">
+                                    <Ionicons name="grid-outline" size={22} color="#94a3b8" />
                                 </View>
-                            );
-                        }}
-                    />
-                </View>
+                                <Text className="text-slate-400 text-[10px] font-semibold">More</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </View>
+                </ScrollView>
+            ) : showSuggestions ? (
+                /* SCREEN 3: Active Typing Search Suggestions layout */
+                <ScrollView
+                    className="flex-1 px-5"
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Services section */}
+                    {matchedServices.length > 0 && (
+                        <View className="mt-5">
+                            <View className="flex-row justify-between items-center mb-3">
+                                <Text className="text-white font-extrabold text-base">Services</Text>
+                                <TouchableOpacity onPress={handleSearch} className="py-1 px-2">
+                                    <Text className="text-indigo-400 text-xs font-bold">View all</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                                {matchedServices.map((item, idx) => (
+                                    <TouchableOpacity
+                                        key={idx}
+                                        onPress={() => handleRecentSearchClick(item.name)}
+                                        className="flex-row items-center justify-between px-4 py-3.5 border-b border-slate-800/60 last:border-0"
+                                    >
+                                        <View className="flex-row items-center">
+                                            <Ionicons name={getQueryIconName(item.name)} size={16} color={getQueryIconColor(item.name)} className="mr-3" />
+                                            <Text className="text-slate-200 text-sm font-semibold">{item.name}</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={16} color="#64748b" />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+                    {/* Professionals section */}
+                    {workers.length > 0 && (
+                        <View className="mt-6 mb-8">
+                            <View className="flex-row justify-between items-center mb-3">
+                                <Text className="text-white font-extrabold text-base">Professionals</Text>
+                                <TouchableOpacity onPress={handleSearch} className="py-1 px-2">
+                                    <Text className="text-indigo-400 text-xs font-bold">View all</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View className="gap-y-3">
+                                {workers.slice(0, 3).map((item) => {
+                                    const userDetails = item.userId || {};
+                                    const fullName = userDetails.fullName || "Professional";
+                                    const profileImage = userDetails.profileImage || "";
+                                    const cityLoc = item.serviceAreas?.[0]?.city || "Local Area";
+                                    const isAvailable = item.availabilityStatus === "available";
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={item._id}
+                                            onPress={() => router.push(`/worker-profile?workerId=${item._id}`)}
+                                            className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-row items-center justify-between"
+                                        >
+                                            <View className="flex-row items-center flex-1 mr-3">
+                                                {profileImage ? (
+                                                    <Image
+                                                        source={{ uri: profileImage }}
+                                                        className="w-12 h-12 rounded-full bg-slate-800 mr-3"
+                                                    />
+                                                ) : (
+                                                    <View className="w-12 h-12 rounded-full bg-indigo-600 items-center justify-center mr-3">
+                                                        <Text className="text-white text-base font-bold">
+                                                            {getInitials(fullName)}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                                <View className="flex-1">
+                                                    <Text className="text-white font-bold text-sm" numberOfLines={1}>
+                                                        {fullName}
+                                                    </Text>
+                                                    <Text className="text-slate-400 text-xs mt-0.5" numberOfLines={1}>
+                                                        {item.profession || "Specialist"}
+                                                    </Text>
+                                                    <View className="flex-row items-center mt-1">
+                                                        <Ionicons name="star" size={12} color="#f59e0b" />
+                                                        <Text className="text-white text-[10px] font-extrabold ml-1">
+                                                            {item.averageRating > 0 ? item.averageRating.toFixed(1) : "New"}
+                                                        </Text>
+                                                        <Text className="text-slate-700 text-xs mx-1.5">|</Text>
+                                                        <Text className="text-slate-300 text-[10px] font-semibold">
+                                                            {item.experienceYears} Years Exp
+                                                        </Text>
+                                                        <Text className="text-slate-700 text-xs mx-1.5">|</Text>
+                                                        <Text className="text-slate-400 text-[10px]" numberOfLines={1}>
+                                                            {cityLoc}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+
+                                            {/* Availability Badge */}
+                                            <View className="flex-row items-center bg-slate-950 border border-slate-850 rounded-full px-2 py-1">
+                                                <View className={`w-1.5 h-1.5 rounded-full mr-1 ${isAvailable ? "bg-emerald-500" : "bg-amber-500"
+                                                    }`} />
+                                                <Text className="text-slate-300 text-[9px] font-bold">
+                                                    {isAvailable ? "Available" : "Busy"}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </View>
+                    )}
+                </ScrollView>
+            ) : (
+                /* Fallback if suggestions are not showing but query is not empty */
+                <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled">
+                    <View className="mt-20 items-center justify-center">
+                        <Ionicons name="search-outline" size={48} color="#64748b" />
+                        <Text className="text-slate-400 text-sm font-bold mt-4">Press search or select a suggestion to search</Text>
+                    </View>
+                </ScrollView>
             )}
         </SafeAreaView>
     );

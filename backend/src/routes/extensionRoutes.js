@@ -7,7 +7,8 @@ import {
 import {
     saveSearchQuery,
     getSearchHistory,
-    clearSearchHistory
+    clearSearchHistory,
+    deleteSearchHistoryItem
 } from "../controllers/searchHistoryController.js";
 import {
     saveLocation,
@@ -29,6 +30,7 @@ router.get("/contacts/stats", protect, getContactStats);
 router.post("/search-history", protect, saveSearchQuery);
 router.get("/search-history", protect, getSearchHistory);
 router.delete("/search-history", protect, clearSearchHistory);
+router.delete("/search-history/:historyId", protect, deleteSearchHistoryItem);
 
 // Saved locations routes
 router.post("/locations", protect, saveLocation);

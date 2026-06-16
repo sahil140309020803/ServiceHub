@@ -106,3 +106,34 @@ export const clearSearchHistory = async (req, res) => {
         });
     }
 };
+
+/**
+ * Delete a specific search history item
+ * @route DELETE /api/extensions/search-history/:historyId
+ */
+export const deleteSearchHistoryItem = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { historyId } = req.params;
+
+        const result = await SearchHistory.findOneAndDelete({ _id: historyId, userId });
+
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: "Search history item not found or unauthorized",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Search history item deleted successfully",
+        });
+    } catch (error) {
+        console.error("Delete Search History Item Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to delete search history item",
+        });
+    }
+};
