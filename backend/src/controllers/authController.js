@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
+import cloudinary from "../config/cloudinary.js";
 
 /**
  * Register User
@@ -204,7 +205,7 @@ export const getMe = async (req, res) => {
  */
 export const updateMe = async (req, res) => {
     try {
-        const { fullName, email, phoneNumber } = req.body;
+        const { fullName, email, phoneNumber, profileImage } = req.body;
         const user = await User.findById(req.user._id);
 
         if (!user) {
@@ -242,6 +243,10 @@ export const updateMe = async (req, res) => {
             user.fullName = fullName.trim();
         }
 
+        if (profileImage !== undefined) {
+            user.profileImage = profileImage;
+        }
+
         await user.save();
 
         const updatedUser = {
@@ -266,6 +271,57 @@ export const updateMe = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: error.message || "Failed to update profile",
+        });
+    }
+};
+
+/**
+ * Cloudinary Upload helper stream for avatars
+ */
+const uploadToCloudinary = (fileBuffer, folder = "avatars") => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder,
+                resource_type: "image",
+            },
+            (error, result) => {
+                if (error) {
+                    return reject(error);
+                }
+                resolve(result);
+            }
+        );
+        uploadStream.end(fileBuffer);
+    });
+};
+
+/**
+ * Upload Avatar to Cloudinary
+ * POST /api/auth/upload-avatar
+ */
+export const uploadAvatar = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "Please upload an image file",
+            });
+        }
+        
+        const uploadResult = await uploadToCloudinary(req.file.buffer);
+        const imageUrl = uploadResult.secure_url;
+        
+        return res.status(200).json({
+            success: true,
+            message: "Avatar uploaded successfully",
+            url: imageUrl,
+        });
+    } catch (error) {
+        console.error("Avatar Upload Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to upload avatar",
         });
     }
 };

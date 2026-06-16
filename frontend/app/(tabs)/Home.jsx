@@ -87,6 +87,45 @@ export default function HomeDashboard() {
     const [topRatedWorkers, setTopRatedWorkers] = useState([]);
     const [isWorkersLoading, setIsWorkersLoading] = useState(false);
 
+    // Favorites states
+    const [favorites, setFavorites] = useState({});
+
+    // Fetch favorites
+    const fetchFavorites = async () => {
+        if (!user) return;
+        try {
+            const response = await api.get("/api/favorites");
+            if (response.data.success) {
+                const favMap = {};
+                response.data.data.forEach(item => {
+                    const wId = typeof item.workerId === 'object' ? item.workerId._id : item.workerId;
+                    if (wId) favMap[wId] = true;
+                });
+                setFavorites(favMap);
+            }
+        } catch (err) {
+            console.error("Error fetching favorites in Home:", err);
+        }
+    };
+
+    const toggleFavorite = async (workerId) => {
+        if (!user) {
+            Alert.alert("Login Required", "Please log in to add favorites.");
+            return;
+        }
+        try {
+            const response = await api.post("/api/favorites/toggle", { workerId });
+            if (response.data.success) {
+                setFavorites(prev => ({
+                    ...prev,
+                    [workerId]: !prev[workerId]
+                }));
+            }
+        } catch (err) {
+            console.error("Error toggling favorite in Home:", err);
+        }
+    };
+
     // Fetch saved locations
     const fetchSavedLocations = async () => {
         if (!user) return;
@@ -150,6 +189,7 @@ export default function HomeDashboard() {
         initHomeData();
         if (user) {
             fetchSavedLocations();
+            fetchFavorites();
         }
     }, [user]);
 
@@ -247,46 +287,81 @@ export default function HomeDashboard() {
         const fullName = userDetails.fullName || "Professional";
         const profileImage = userDetails.profileImage || "";
         const cityLoc = item.serviceAreas?.[0]?.city || "Local Area";
+        const isAvailable = item.availabilityStatus === "available";
+        const isFav = !!favorites[item._id];
+
+        const initials = fullName
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
 
         return (
             <TouchableOpacity
                 key={item._id}
+                activeOpacity={0.95}
                 onPress={() => router.push(`/worker-profile?workerId=${item._id}`)}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-4 w-[200] mr-4 justify-between active:opacity-90"
+                className="bg-slate-900 border border-slate-800/80 border-l-4 border-l-indigo-500 rounded-[20px] p-3 w-[240] h-[115] mr-4 flex-row items-center active:opacity-90 relative shadow-md shadow-slate-950/20"
             >
-                <View className="items-center mb-3">
+                {/* Floating Heart/Favorite Button */}
+                <TouchableOpacity
+                    onPress={() => toggleFavorite(item._id)}
+                    className="absolute top-2.5 right-2.5 z-10 w-7 h-7 items-center justify-center rounded-full bg-slate-950/50 border border-slate-800/50 active:scale-95"
+                >
+                    <Ionicons
+                        name={isFav ? "heart" : "heart-outline"}
+                        size={13}
+                        color={isFav ? "#ef4444" : "#94a3b8"}
+                    />
+                </TouchableOpacity>
+
+                {/* Left Side: Modern Rounded-Square Avatar */}
+                <View className="relative">
                     {profileImage ? (
                         <Image
                             source={{ uri: profileImage }}
-                            className="w-14 h-14 rounded-full bg-slate-800"
+                            className="w-16 h-16 rounded-[16px] bg-slate-850 border border-slate-800"
                         />
                     ) : (
-                        <View className="w-14 h-14 rounded-full bg-indigo-650 items-center justify-center">
-                            <Text className="text-white text-lg font-bold">
-                                {fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                        <View className="w-16 h-16 rounded-[16px] bg-indigo-650 items-center justify-center border border-indigo-500/30">
+                            <Text className="text-white text-base font-bold">
+                                {initials}
                             </Text>
                         </View>
                     )}
-                    <Text className="text-white font-extrabold text-sm text-center mt-2.5 w-full" numberOfLines={1}>
-                        {fullName}
-                    </Text>
-                    <Text className="text-slate-400 text-[10px] text-center font-semibold mt-0.5 w-full" numberOfLines={1}>
-                        {item.profession}
-                    </Text>
+                    {/* Status Dot */}
+                    <View className={`absolute bottom-[-1] right-[-1] w-3.5 h-3.5 rounded-full border-2 border-slate-900 ${isAvailable ? "bg-emerald-500" : "bg-amber-500"}`} />
                 </View>
 
-                <View className="border-t border-slate-800/80 pt-2 flex-row justify-between items-center w-full">
-                    <View className="flex-row items-center">
-                        <Ionicons name="star" size={12} color="#f59e0b" />
-                        <Text className="text-white text-[11px] font-bold ml-1">
+                {/* Right Side: Professional Details */}
+                <View className="flex-1 ml-3.5 justify-center pr-4">
+                    <Text className="text-white font-extrabold text-sm" numberOfLines={1}>
+                        {fullName}
+                    </Text>
+
+                    <Text className="text-slate-400 text-[10px] font-semibold mt-0.5" numberOfLines={1}>
+                        {item.profession || "Specialist"}
+                    </Text>
+
+                    {/* Rating & Experience Row */}
+                    <View className="flex-row items-center mt-1">
+                        <Ionicons name="star" size={10} color="#f59e0b" />
+                        <Text className="text-white text-[10px] font-bold ml-1">
                             {item.averageRating > 0 ? item.averageRating.toFixed(1) : "New"}
                         </Text>
+                        <Text className="text-slate-600 text-xs mx-1 font-medium">•</Text>
+                        <Text className="text-slate-300 text-[9.5px] font-medium">
+                            {item.experienceYears} Yrs
+                        </Text>
                     </View>
-                    <View className="flex-row items-center">
-                        <Ionicons name="navigate-outline" size={11} color="#6366f1" />
-                        <Text className="text-slate-400 text-[10px] font-semibold ml-1" numberOfLines={1}>
+
+                    {/* Location/Distance badge */}
+                    <View className="flex-row items-center mt-1.5">
+                        <Ionicons name="location-outline" size={10} color="#6366f1" />
+                        <Text className="text-indigo-400 text-[9px] font-bold ml-1" numberOfLines={1}>
                             {item.distance !== undefined && item.distance !== 999999
-                                ? `${item.distance.toFixed(1)} km`
+                                ? `${item.distance.toFixed(1)} km away`
                                 : cityLoc}
                         </Text>
                     </View>
@@ -298,7 +373,7 @@ export default function HomeDashboard() {
     return (
         <SafeAreaView className="flex-1 bg-slate-950">
             <StatusBar barStyle="light-content" />
-            
+
             <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
                 {/* Header & Location Selection */}
                 <View className="flex-row justify-between items-center mt-4">
@@ -358,7 +433,7 @@ export default function HomeDashboard() {
                     <Text className="text-white font-extrabold text-lg">
                         Service Categories
                     </Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push("/search")}>
                         <Text className="text-indigo-400 font-bold text-sm">See All</Text>
                     </TouchableOpacity>
                 </View>
@@ -424,7 +499,8 @@ export default function HomeDashboard() {
                 {location && (
                     <View className="mt-8 mb-10">
                         <View className="flex-row justify-between items-center mb-4">
-                            <Text className="text-white font-extrabold text-lg">Top Rated Nearby</Text>
+                            <Text className="text-white font-extrabold text-lg">Top Rated Nearby
+                            </Text>
                             <TouchableOpacity onPress={() => router.push("/search")}>
                                 <Text className="text-indigo-400 font-bold text-sm">See All</Text>
                             </TouchableOpacity>
@@ -449,7 +525,7 @@ export default function HomeDashboard() {
             {showLocationModal && (
                 <View className="absolute inset-0 bg-slate-950/95 justify-center items-center px-6 z-50">
                     <StatusBar barStyle="light-content" />
-                    
+
                     {tempResolvedLocation ? (
                         /* Save Resolved Address overlay flow (Home, Work, Other tags) */
                         <View className="bg-slate-900 border border-slate-800 rounded-3xl w-full p-6 gap-y-4 shadow-2xl items-center relative overflow-hidden">
@@ -461,20 +537,20 @@ export default function HomeDashboard() {
                                 <Ionicons name="arrow-back-outline" size={18} color="white" />
                             </TouchableOpacity>
                             <View className="absolute top-[-50] right-[-50] w-32 h-32 bg-indigo-500/10 rounded-full blur-xl" />
-                            
+
                             <View className="w-14 h-14 bg-indigo-600/10 rounded-full items-center justify-center border border-indigo-500/20">
                                 <Ionicons name="bookmark-outline" size={28} color="#6366f1" />
                             </View>
-                            
+
                             <Text className="text-white font-extrabold text-lg text-center">Save Address Details</Text>
-                            
+
                             <View className="bg-slate-950 border border-slate-850 p-4 rounded-2xl w-full">
                                 <Text className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Address Resolved</Text>
                                 <Text className="text-white text-xs mt-1 leading-relaxed" numberOfLines={3}>
                                     {tempResolvedLocation.address}
                                 </Text>
                             </View>
-                            
+
                             {/* Address labels select tags */}
                             <View className="w-full gap-y-2">
                                 <Text className="text-slate-400 text-xs font-semibold text-center">Save location as:</Text>
@@ -485,11 +561,10 @@ export default function HomeDashboard() {
                                             <TouchableOpacity
                                                 key={label}
                                                 onPress={() => setSelectedLabel(label)}
-                                                className={`px-4 py-2 rounded-xl border flex-row items-center space-x-1 ${
-                                                    isSelected
-                                                        ? "bg-indigo-650 border-indigo-500"
-                                                        : "bg-slate-950 border-slate-850"
-                                                }`}
+                                                className={`px-4 py-2 rounded-xl border flex-row items-center space-x-1 ${isSelected
+                                                    ? "bg-indigo-650 border-indigo-500"
+                                                    : "bg-slate-950 border-slate-850"
+                                                    }`}
                                             >
                                                 <Ionicons
                                                     name={getLabelIcon(label)}
@@ -539,7 +614,7 @@ export default function HomeDashboard() {
                             </TouchableOpacity>
                             {/* Background glow */}
                             <View className="absolute top-[-50] right-[-50] w-32 h-32 bg-indigo-500/10 rounded-full blur-xl" />
-                            
+
                             <View className="w-14 h-14 bg-indigo-600/10 rounded-full items-center justify-center border border-indigo-500/20">
                                 <Ionicons name="location" size={28} color="#6366f1" />
                             </View>

@@ -141,10 +141,10 @@ const useAuthStore = create((set, get) => ({
     },
 
     // Update user basic profile
-    updateProfile: async (fullName, email, phoneNumber) => {
+    updateProfile: async (fullName, email, phoneNumber, profileImage) => {
         set({ isLoading: true, error: null });
         try {
-            const response = await api.put("/api/auth/update", { fullName, email, phoneNumber });
+            const response = await api.put("/api/auth/update", { fullName, email, phoneNumber, profileImage });
             const { success, data, message } = response.data;
 
             if (success) {

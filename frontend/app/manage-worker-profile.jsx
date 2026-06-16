@@ -8,11 +8,13 @@ import {
     StatusBar,
     ScrollView,
     Alert,
-    Platform
+    Platform,
+    Image
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import api from "../src/services/api";
 import useAuthStore from "../src/store/useAuthStore";
 import * as Location from "expo-location";
@@ -32,7 +34,7 @@ if (Platform.OS !== "web") {
 
 export default function ManageWorkerProfileScreen() {
     const router = useRouter();
-    const { profileCompleted, logout } = useAuthStore();
+    const { profileCompleted, logout, token, user } = useAuthStore();
 
     const [profession, setProfession] = useState("");
     const [experienceYears, setExperienceYears] = useState("");
@@ -40,6 +42,10 @@ export default function ManageWorkerProfileScreen() {
     const [whatsappNumber, setWhatsappNumber] = useState("");
     const [skillsString, setSkillsString] = useState("");
     
+    // Profile image states (optional)
+    const [profileImage, setProfileImage] = useState(user?.profileImage || "");
+    const [isUploading, setIsUploading] = useState(false);
+
     // Location Coordinates & Address
     const [latitude, setLatitude] = useState("");
     const [longitude, setLongitude] = useState("");
@@ -64,6 +70,62 @@ export default function ManageWorkerProfileScreen() {
     const [isSaving, setIsSaving] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
 
+    const pickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+            Alert.alert("Permission Denied", "We need gallery permissions to select a profile photo.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const selectedImageUri = result.assets[0].uri;
+            uploadImage(selectedImageUri);
+        }
+    };
+
+    const uploadImage = async (uri) => {
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            
+            // Format filename and type
+            const uriParts = uri.split(".");
+            const fileType = uriParts[uriParts.length - 1];
+            
+            formData.append("avatar", {
+                uri,
+                name: `avatar.${fileType}`,
+                type: `image/${fileType === "jpg" ? "jpeg" : fileType}`,
+            });
+
+            const response = await api.post("/api/auth/upload-avatar", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (response.data.success) {
+                setProfileImage(response.data.url);
+                Alert.alert("Success", "Photo uploaded successfully!");
+            } else {
+                Alert.alert("Upload Failed", response.data.message || "Could not upload image");
+            }
+        } catch (err) {
+            console.error("Image upload error:", err);
+            Alert.alert("Error", "An error occurred while uploading the image.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     useEffect(() => {
         const loadPageData = async () => {
             try {
@@ -78,6 +140,9 @@ export default function ManageWorkerProfileScreen() {
                 if (profileRes && profileRes.data.success && profileRes.data.data) {
                     const data = profileRes.data.data;
                     setProfession(data.profession || "");
+                    if (data.userId && data.userId.profileImage) {
+                        setProfileImage(data.userId.profileImage);
+                    }
                     setExperienceYears(String(data.experienceYears || 0));
                     setAbout(data.about || "");
                     setWhatsappNumber(data.whatsappNumber || "");
@@ -268,7 +333,8 @@ export default function ManageWorkerProfileScreen() {
             serviceAreas: serviceAreasArray,
             address: address.trim(),
             latitude: parseFloat(latitude) || 0,
-            longitude: parseFloat(longitude) || 0
+            longitude: parseFloat(longitude) || 0,
+            profileImage: profileImage
         };
 
         try {
@@ -276,6 +342,9 @@ export default function ManageWorkerProfileScreen() {
             if (response.data.success) {
                 // Instantly update global completed flag to trigger RootLayout navigate gate
                 useAuthStore.getState().setProfileCompleted(true);
+                if (response.data.data && response.data.data.userId) {
+                    useAuthStore.setState({ user: response.data.data.userId });
+                }
                 Alert.alert("Success", "Professional profile saved successfully!", [
                     { text: "OK", onPress: () => router.replace("/(tabs)/Home") }
                 ]);
@@ -343,6 +412,39 @@ export default function ManageWorkerProfileScreen() {
                             </View>
                         </View>
                     )}
+
+                    {/* Profile Image Picker (Optional) */}
+                    <View className="items-center my-2">
+                        <Text className="text-slate-300 font-semibold text-sm self-start mb-2">Profile Photo (Optional)</Text>
+                        <TouchableOpacity 
+                            onPress={pickImage} 
+                            disabled={isUploading}
+                            className="relative active:opacity-90"
+                        >
+                            <View className="w-24 h-24 rounded-full bg-slate-900 border-2 border-indigo-500/50 justify-center items-center overflow-hidden shadow-lg shadow-indigo-500/20">
+                                {isUploading ? (
+                                    <ActivityIndicator size="small" color="#6366f1" />
+                                ) : profileImage ? (
+                                    <Image 
+                                        source={{ uri: profileImage }} 
+                                        className="w-full h-full"
+                                    />
+                                ) : (
+                                    <View className="items-center justify-center">
+                                        <Ionicons name="person" size={40} color="#64748b" />
+                                    </View>
+                                )}
+                            </View>
+                            
+                            {/* Camera overlay badge */}
+                            <View className="absolute bottom-0 right-0 bg-indigo-600 border border-slate-950 w-7 h-7 rounded-full items-center justify-center shadow-md">
+                                <Ionicons name="camera" size={14} color="white" />
+                            </View>
+                        </TouchableOpacity>
+                        <Text className="text-slate-500 text-[11px] mt-1.5 font-medium">
+                            {isUploading ? "Uploading..." : "Click to select profile photo"}
+                        </Text>
+                    </View>
 
                     {/* Profession */}
                     <View className="gap-y-2">

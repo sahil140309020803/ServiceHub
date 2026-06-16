@@ -66,43 +66,97 @@ export default function ReviewsScreen() {
             .slice(0, 2);
     };
 
+    const renderHeader = () => {
+        if (stats.totalReviews === 0) return null;
+
+        let ratingText = "Outstanding";
+        if (stats.averageRating < 4.8) ratingText = "Excellent";
+        if (stats.averageRating < 4.0) ratingText = "Very Good";
+        if (stats.averageRating < 3.0) ratingText = "Average";
+
+        return (
+            <View className="bg-slate-900 border border-slate-800/80 rounded-3xl p-5 mb-5 flex-row items-center justify-between shadow-md shadow-slate-950/20 relative overflow-hidden">
+                <View className="absolute top-[-30] right-[-30] w-28 h-28 bg-indigo-600/10 rounded-full blur-xl" />
+
+                <View className="flex-1">
+                    <View className="flex-row items-baseline">
+                        <Text className="text-4xl font-black text-white">{stats.averageRating.toFixed(1)}</Text>
+                        <Text className="text-slate-500 text-xs font-semibold ml-1.5">/5</Text>
+                    </View>
+
+                    <View className="flex-row items-center mt-2 space-x-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                            <Ionicons
+                                key={s}
+                                name={s <= Math.round(stats.averageRating) ? "star" : "star-outline"}
+                                size={14}
+                                color="#f59e0b"
+                            />
+                        ))}
+                    </View>
+
+                    <Text className="text-slate-400 text-xs mt-2 font-medium">
+                        Based on {stats.totalReviews} customer feedback{stats.totalReviews > 1 ? "s" : ""}
+                    </Text>
+                </View>
+
+                <View className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl px-4 py-3 items-center justify-center">
+                    <Ionicons name="ribbon-outline" size={22} color="#6366f1" />
+                    <Text className="text-indigo-400 font-extrabold text-xs mt-1.5">{ratingText}</Text>
+                </View>
+            </View>
+        );
+    };
+
     const renderReviewCard = ({ item }) => {
         const customer = item.customerId || {};
         const custName = customer.fullName || "Customer";
 
         return (
-            <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4.5 mb-3 shadow-sm">
+            <View className="bg-slate-900 border border-slate-800/70 rounded-3xl p-5 mb-4 shadow-md relative overflow-hidden">
+                {/* Background double quotation mark for visual flair */}
+                <View className="absolute right-4 bottom-2 opacity-5">
+                    <Ionicons name="chatbubbles" size={60} color="#64748b" />
+                </View>
+
                 <View className="flex-row justify-between items-start">
                     <View className="flex-row items-center flex-1 mr-2">
-                        {/* Initial Circle */}
-                        <View className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 items-center justify-center mr-3">
-                            <Text className="text-white font-bold text-sm">
+                        {/* Initial Circle with indigo gradient */}
+                        <View className="w-11 h-11 rounded-full bg-indigo-650 items-center justify-center mr-3.5 border border-indigo-500/30">
+                            <Text className="text-white font-extrabold text-sm">
                                 {getInitials(custName)}
                             </Text>
                         </View>
+
                         <View className="flex-1">
-                            <Text className="text-white font-bold text-sm" numberOfLines={1}>
+                            <Text className="text-white font-extrabold text-sm" numberOfLines={1}>
                                 {custName}
                             </Text>
-                            <Text className="text-slate-400 text-[10px] font-semibold mt-0.5">
+                            <Text className="text-slate-500 text-[10px] font-semibold mt-0.5">
                                 {new Date(item.createdAt).toLocaleDateString()}
                             </Text>
                         </View>
                     </View>
-                    
-                    {/* Star Rating Badge */}
-                    <View className="flex-row items-center bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg">
-                        <Text className="text-amber-400 text-xs font-black mr-1">{item.rating}</Text>
-                        <Ionicons name="star" size={12} color="#f59e0b" />
+
+                    {/* Render exact stars dynamically */}
+                    <View className="flex-row items-center space-x-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                            <Ionicons
+                                key={s}
+                                name={s <= item.rating ? "star" : "star-outline"}
+                                size={11}
+                                color="#f59e0b"
+                            />
+                        ))}
                     </View>
                 </View>
 
                 {item.reviewText ? (
-                    <Text className="text-slate-300 text-xs leading-relaxed mt-3.5 pl-1">
-                        {item.reviewText}
+                    <Text className="text-slate-300 text-xs leading-relaxed mt-4 pl-0.5">
+                        "{item.reviewText}"
                     </Text>
                 ) : (
-                    <Text className="text-slate-500 text-xs italic mt-3 pl-1">
+                    <Text className="text-slate-500 text-xs italic mt-4 pl-0.5">
                         No review comments left.
                     </Text>
                 )}
@@ -114,20 +168,10 @@ export default function ReviewsScreen() {
         <SafeAreaView className="flex-1 bg-slate-950" edges={["top", "left", "right"]}>
             <StatusBar barStyle="light-content" />
 
-            {/* Header section with ratings summary card */}
-            <View className="px-5 py-4 border-b border-slate-900 bg-slate-950 flex-row items-center justify-between">
-                <View>
-                    <Text className="text-2xl font-extrabold text-white">Client Reviews</Text>
-                    <Text className="text-slate-400 text-xs mt-0.5">Ratings and feedback from completed orders</Text>
-                </View>
-                {/* Aggregate Summary */}
-                {stats.totalReviews > 0 && (
-                    <View className="bg-slate-900 border border-slate-800/80 px-3 py-1.5 rounded-xl flex-row items-center space-x-1">
-                        <Ionicons name="star" size={14} color="#f59e0b" />
-                        <Text className="text-white font-black text-sm">{stats.averageRating.toFixed(1)}</Text>
-                        <Text className="text-slate-400 text-[10px] font-bold">({stats.totalReviews})</Text>
-                    </View>
-                )}
+            {/* Header section without static aggregate summaries */}
+            <View className="px-5 py-4 border-b border-slate-900 bg-slate-950">
+                <Text className="text-2xl font-extrabold text-white">Client Reviews</Text>
+                <Text className="text-slate-400 text-xs mt-0.5">Ratings and feedback from completed orders</Text>
             </View>
 
             {isLoading ? (
@@ -149,6 +193,7 @@ export default function ReviewsScreen() {
                     data={reviews}
                     keyExtractor={(item) => item._id}
                     renderItem={renderReviewCard}
+                    ListHeaderComponent={renderHeader}
                     contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24 }}
                     showsVerticalScrollIndicator={false}
                     refreshControl={

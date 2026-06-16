@@ -74,7 +74,7 @@ export default function GalleryScreen() {
                     className="w-full h-full"
                     resizeMode="cover"
                 />
-                
+
                 {/* Visual Stats Bottom Bar Overlay */}
                 <View className="absolute bottom-0 left-0 right-0 bg-black/60 px-1.5 py-1 flex-row items-center justify-between">
                     <View className="flex-row items-center space-x-0.5">

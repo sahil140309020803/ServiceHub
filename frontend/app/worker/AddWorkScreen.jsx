@@ -44,7 +44,7 @@ export default function AddWorkScreen() {
                 const uri = asset.uri;
                 const name = asset.fileName || uri.split("/").pop() || "project.jpg";
                 const type = asset.mimeType || "image/jpeg";
-                
+
                 setSelectedImage({ uri, name, type });
             }
         } catch (err) {

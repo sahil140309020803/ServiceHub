@@ -134,7 +134,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
             setEditAboutText(profile.about || "");
             setEditSkillsList(profile.skills || []);
             setEditSelectedCategories(profile.serviceCategories?.map(c => c._id || c) || []);
-            
+
             const areaObj = profile.serviceAreas?.[0] || {};
             setEditArea(areaObj.area || "");
             setEditCity(areaObj.city || "");
@@ -332,7 +332,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
     return (
         <SafeAreaView className="flex-1 bg-slate-950" edges={["bottom"]}>
             <StatusBar barStyle="light-content" />
-            
+
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Hero Avatar Card */}
                 {profile ? (
@@ -382,7 +382,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                     {profile.experienceYears} Years
                                 </Text>
                             </View>
-                            
+
                             <View className="w-[1] h-8 bg-slate-800 self-center" />
 
                             <View className="items-center flex-1">
@@ -667,7 +667,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                                                 </Text>
                                                             </View>
                                                         </View>
-                                                        
+
                                                         <View className="flex-row items-center bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
                                                             <Text className="text-amber-400 text-xs font-bold mr-1">
                                                                 {rev.rating}
@@ -675,7 +675,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                                             <Ionicons name="star" size={12} color="#f59e0b" />
                                                         </View>
                                                     </View>
-                                                    
+
                                                     {rev.reviewText ? (
                                                         <Text className="text-slate-300 text-xs mt-1 leading-relaxed">
                                                             {rev.reviewText}
@@ -696,7 +696,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                     </Text>
 
                     <View className="gap-y-3">
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             onPress={() => router.push("/edit-profile")}
                             className="flex-row items-center justify-between bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl shadow-sm"
                         >
@@ -946,11 +946,10 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                     <TouchableOpacity
                                         key={cat._id}
                                         onPress={() => handleToggleCategory(cat._id)}
-                                        className={`flex-row items-center justify-between p-3.5 rounded-xl border mb-2 active:opacity-85 ${
-                                            editSelectedCategories.includes(cat._id)
+                                        className={`flex-row items-center justify-between p-3.5 rounded-xl border mb-2 active:opacity-85 ${editSelectedCategories.includes(cat._id)
                                                 ? "bg-indigo-500/10 border-indigo-500"
                                                 : "bg-slate-950 border-slate-800"
-                                        }`}
+                                            }`}
                                     >
                                         <Text className="text-white text-sm font-semibold">{cat.name}</Text>
                                         <Ionicons
@@ -1168,7 +1167,7 @@ function CustomerProfileTab({ user, logout, router }) {
                         {user?.fullName || "User Name"}
                     </Text>
                     <Text className="text-slate-400 text-sm mt-1">{user?.email}</Text>
-                    
+
                     {/* Role Badge */}
                     <View className="mt-3 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full flex-row items-center space-x-1.5">
                         <Ionicons name="shield-checkmark" size={14} color="#818cf8" />
@@ -1223,7 +1222,7 @@ function CustomerProfileTab({ user, logout, router }) {
                         Settings
                     </Text>
 
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => router.push("/edit-profile")}
                         className="flex-row items-center justify-between bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl shadow-sm"
                     >

@@ -153,7 +153,7 @@ export default function WorkerProfileScreen() {
                 setReviewText("");
                 setUserRating(5);
                 setShowReviewModal(false);
-                
+
                 // Refresh profile stats and reviews list
                 const profRes = await api.get(`/api/workers/${workerId}`);
                 if (profRes.data.success) {
@@ -187,7 +187,7 @@ export default function WorkerProfileScreen() {
                             const response = await api.delete(`/api/reviews/${reviewId}`);
                             if (response.data.success) {
                                 Alert.alert("Success", "Review deleted successfully!");
-                                
+
                                 // Refresh stats and list
                                 const profRes = await api.get(`/api/workers/${workerId}`);
                                 if (profRes.data.success) {
@@ -303,7 +303,7 @@ export default function WorkerProfileScreen() {
     const userDetails = profile.userId || {};
     const fullName = userDetails.fullName || "Service Professional";
     const profileImage = userDetails.profileImage || "";
-    
+
     return (
         <SafeAreaView className="flex-1 bg-slate-950" edges={["top", "left", "right"]}>
             <StatusBar barStyle="light-content" />
@@ -381,7 +381,7 @@ export default function WorkerProfileScreen() {
                                 {profile.experienceYears} Years
                             </Text>
                         </View>
-                        
+
                         <View className="w-[1] h-8 bg-slate-800 self-center" />
 
                         <View className="items-center flex-1">
@@ -548,7 +548,7 @@ export default function WorkerProfileScreen() {
                                     </Text>
                                 </View>
                             </View>
-                            
+
                             {/* Write Review Button */}
                             {user && user.role === "customer" && profile.userId?._id !== user._id && !reviews.some(r => r.customerId?._id === user._id || r.customerId === user._id) && (
                                 <TouchableOpacity
@@ -598,7 +598,7 @@ export default function WorkerProfileScreen() {
                                                         </Text>
                                                     </View>
                                                 </View>
-                                                
+
                                                 <View className="flex-row items-center space-x-2">
                                                     <View className="flex-row items-center bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
                                                         <Text className="text-amber-400 text-xs font-bold mr-1">
@@ -606,7 +606,7 @@ export default function WorkerProfileScreen() {
                                                         </Text>
                                                         <Ionicons name="star" size={12} color="#f59e0b" />
                                                     </View>
-                                                    
+
                                                     {isAuthor && (
                                                         <TouchableOpacity
                                                             onPress={() => handleDeleteReview(rev._id)}
@@ -617,7 +617,7 @@ export default function WorkerProfileScreen() {
                                                     )}
                                                 </View>
                                             </View>
-                                            
+
                                             {rev.reviewText ? (
                                                 <Text className="text-slate-300 text-xs mt-1 leading-relaxed">
                                                     {rev.reviewText}
@@ -738,11 +738,10 @@ export default function WorkerProfileScreen() {
                                 <TouchableOpacity
                                     key={reasonText}
                                     onPress={() => setReportReason(reasonText)}
-                                    className={`px-4 py-3 rounded-xl border flex-row items-center active:opacity-90 ${
-                                        reportReason === reasonText
+                                    className={`px-4 py-3 rounded-xl border flex-row items-center active:opacity-90 ${reportReason === reasonText
                                             ? "bg-rose-500/10 border-rose-500"
                                             : "bg-slate-950 border-slate-800"
-                                    }`}
+                                        }`}
                                 >
                                     <Ionicons
                                         name={reportReason === reasonText ? "ellipse" : "ellipse-outline"}

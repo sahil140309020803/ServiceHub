@@ -173,25 +173,33 @@ export default function GalleryDetailsScreen() {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950" edges={["top", "left", "right"]}>
-            <StatusBar barStyle="light-content" />
+        <View className="flex-1 bg-slate-950">
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            {/* Header */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-900 bg-slate-950">
+            {/* Immersive Full Screen Photo View */}
+            <View className="absolute inset-0 w-full h-full justify-center items-center">
+                <Image
+                    source={{ uri: item.imageUrl }}
+                    className="w-full h-full"
+                    resizeMode="contain"
+                />
+            </View>
+
+            {/* Absolute Top Header Actions */}
+            <View className="absolute top-12 left-5 right-5 z-50 flex-row justify-between items-center">
                 <TouchableOpacity
                     onPress={() => router.back()}
-                    className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full items-center justify-center"
+                    className="w-10 h-10 bg-slate-950/60 border border-slate-800/80 rounded-full items-center justify-center"
                 >
                     <Ionicons name="arrow-back" size={20} color="white" />
                 </TouchableOpacity>
-                <Text className="text-lg font-bold text-white">Project Details</Text>
-                
+
                 {/* Delete button (owner only) */}
                 {isOwner ? (
                     <TouchableOpacity
                         onPress={handleDelete}
                         disabled={isDeleting}
-                        className="w-10 h-10 bg-rose-500/10 border border-rose-500/20 rounded-full items-center justify-center"
+                        className="w-10 h-10 bg-rose-500/20 border border-rose-500/30 rounded-full items-center justify-center"
                     >
                         {isDeleting ? (
                             <ActivityIndicator size="small" color="#f43f5e" />
@@ -204,83 +212,61 @@ export default function GalleryDetailsScreen() {
                 )}
             </View>
 
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                {/* Full Image view */}
-                <View className="bg-slate-900 border-b border-slate-850">
-                    <Image
-                        source={{ uri: item.imageUrl }}
-                        className="w-full h-[320]"
-                        resizeMode="contain"
-                    />
-                </View>
-
-                {/* Details Card */}
-                <View className="px-5 py-6">
-                    {/* Header stats row */}
-                    <View className="flex-row justify-between items-start mb-4">
-                        <View className="flex-1 mr-4">
-                            <Text className="text-white font-black text-xl leading-tight">
-                                {item.title || "Untitled Project"}
-                            </Text>
-                            <Text className="text-slate-400 text-xs mt-1.5 font-medium">
-                                Uploaded on {new Date(item.createdAt).toLocaleDateString()}
-                            </Text>
-                        </View>
-                        
-                        {/* Likes & Views tags */}
-                        <View className="flex-row items-center space-x-2.5">
-                            <View className="flex-row items-center bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
-                                <Ionicons name="eye-outline" size={14} color="#6366f1" />
-                                <Text className="text-slate-200 text-xs font-bold ml-1.5">
-                                    {item.viewsCount || 0}
-                                </Text>
-                            </View>
-                            <View className="flex-row items-center bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
-                                <Ionicons name="heart" size={14} color="#ef4444" />
-                                <Text className="text-slate-200 text-xs font-bold ml-1.5">
-                                    {item.likesCount || 0}
-                                </Text>
-                            </View>
-                        </View>
+            {/* Floating Details Overlay Card */}
+            <View className="absolute bottom-10 left-5 right-5 z-50 bg-slate-900/90 border border-slate-850 rounded-[28px] p-5 shadow-xl shadow-slate-950/50">
+                <View className="flex-row justify-between items-start">
+                    <View className="flex-1 mr-4">
+                        <Text className="text-white font-black text-lg leading-tight">
+                            {item.title || "Untitled Project"}
+                        </Text>
+                        <Text className="text-slate-500 text-[10px] font-bold mt-1">
+                            Uploaded on {new Date(item.createdAt).toLocaleDateString()}
+                        </Text>
                     </View>
 
-                    {/* Description Section */}
-                    {item.description ? (
-                        <View className="bg-slate-900 border border-slate-850 rounded-2xl p-4.5 mt-2">
-                            <Text className="text-slate-300 text-sm leading-relaxed">
-                                {item.description}
-                            </Text>
-                        </View>
-                    ) : (
-                        <Text className="text-slate-500 text-xs italic pl-1 mt-2">
-                            No description provided for this project.
-                        </Text>
-                    )}
-
-                    {/* Like Action Toggle Button (For Customers / Visitors) */}
+                    {/* Heart/Like Button */}
                     <TouchableOpacity
                         onPress={handleToggleLike}
-                        className={`py-4 rounded-xl flex-row items-center justify-center border mt-8 active:opacity-90 transition-all ${
-                            hasLiked
+                        className={`w-11 h-11 rounded-full items-center justify-center border transition-all ${hasLiked
                                 ? "bg-rose-500/10 border-rose-500/30"
-                                : "bg-slate-900 border-slate-800"
-                        }`}
+                                : "bg-slate-950 border border-slate-850"
+                            }`}
                     >
                         <Ionicons
                             name={hasLiked ? "heart" : "heart-outline"}
                             size={20}
                             color={hasLiked ? "#f43f5e" : "#94a3b8"}
                         />
-                        <Text
-                            className={`font-extrabold text-sm ml-2.5 ${
-                                hasLiked ? "text-rose-400" : "text-slate-300"
-                            }`}
-                        >
-                            {hasLiked ? "Liked Project" : "Like this Work"}
-                        </Text>
                     </TouchableOpacity>
                 </View>
-            </ScrollView>
-        </SafeAreaView>
+
+                {/* Description Scrollbox */}
+                {item.description ? (
+                    <View className="mt-3.5 border-t border-slate-850/45 pt-3.5">
+                        <ScrollView style={{ maxHeight: 75 }} showsVerticalScrollIndicator={false}>
+                            <Text className="text-slate-300 text-xs leading-relaxed">
+                                {item.description}
+                            </Text>
+                        </ScrollView>
+                    </View>
+                ) : null}
+
+                {/* Stats Footer Row */}
+                <View className="flex-row justify-start items-center space-x-3 mt-4 pt-3 border-t border-slate-850/45">
+                    <View className="flex-row items-center bg-slate-950/60 border border-slate-850 px-2.5 py-1 rounded-lg">
+                        <Ionicons name="eye-outline" size={11} color="#6366f1" />
+                        <Text className="text-slate-400 text-[9px] font-bold ml-1">
+                            {item.viewsCount || 0} views
+                        </Text>
+                    </View>
+                    <View className="flex-row items-center bg-slate-950/60 border border-slate-850 px-2.5 py-1 rounded-lg">
+                        <Ionicons name="heart-outline" size={11} color="#ef4444" />
+                        <Text className="text-slate-400 text-[9px] font-bold ml-1">
+                            {item.likesCount || 0} likes
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        </View>
     );
 }

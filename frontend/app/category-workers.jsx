@@ -15,11 +15,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import api from "../src/services/api";
 import useLocationStore from "../src/store/useLocationStore";
+import useAuthStore from "../src/store/useAuthStore";
 
 export default function CategoryWorkersScreen() {
     const router = useRouter();
     const { categoryId, categoryName, searchQuery } = useLocalSearchParams();
     const { location } = useLocationStore();
+    const { user } = useAuthStore();
 
     const [workers, setWorkers] = useState([]);
     const [filteredWorkers, setFilteredWorkers] = useState([]);
@@ -28,12 +30,35 @@ export default function CategoryWorkersScreen() {
     const [selectedFilter, setSelectedFilter] = useState("all"); // "all", "nearby", "top-rated", "available"
     const [sortBy, setSortBy] = useState("rating"); // "rating", "experience", "distance"
     const [favorites, setFavorites] = useState({});
-    
+
     // Filter drawer states
     const [showFilters, setShowFilters] = useState(false);
     const [cityFilter, setCityFilter] = useState("");
     const [minRatingFilter, setMinRatingFilter] = useState(0);
     const [minExperienceFilter, setMinExperienceFilter] = useState(0);
+
+    // Fetch user favorites on mount
+    useEffect(() => {
+        const fetchFavorites = async () => {
+            if (!user) return;
+            try {
+                const response = await api.get("/api/favorites");
+                if (response.data.success) {
+                    const favs = {};
+                    (response.data.data || []).forEach(favItem => {
+                        if (favItem.workerId) {
+                            const wId = favItem.workerId._id || favItem.workerId;
+                            favs[wId] = true;
+                        }
+                    });
+                    setFavorites(favs);
+                }
+            } catch (err) {
+                console.error("Error fetching favorites:", err);
+            }
+        };
+        fetchFavorites();
+    }, [user]);
 
     // Fetch workers
     useEffect(() => {
@@ -74,9 +99,9 @@ export default function CategoryWorkersScreen() {
 
         // Apply tab filters
         if (selectedFilter === "nearby") {
-            result = result.filter(w => w.distance !== undefined && w.distance < 10);
+            result = result.filter(w => w.distance !== undefined && w.distance < 16);
         } else if (selectedFilter === "top-rated") {
-            result = result.filter(w => w.averageRating >= 4.5);
+            result = result.filter(w => w.averageRating >= 4);
         } else if (selectedFilter === "available") {
             result = result.filter(w => w.availabilityStatus === "available");
         }
@@ -121,11 +146,19 @@ export default function CategoryWorkersScreen() {
             .slice(0, 2);
     };
 
-    const toggleFavorite = (id) => {
-        setFavorites(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
+    const toggleFavorite = async (workerId) => {
+        if (!user) return;
+        try {
+            const response = await api.post("/api/favorites/toggle", { workerId });
+            if (response.data.success) {
+                setFavorites(prev => ({
+                    ...prev,
+                    [workerId]: !prev[workerId]
+                }));
+            }
+        } catch (err) {
+            console.error("Error toggling favorite:", err);
+        }
     };
 
     const renderWorkerItem = ({ item }) => {
@@ -142,46 +175,45 @@ export default function CategoryWorkersScreen() {
             : ["General Service", "Maintenance", "Consultation"];
 
         return (
-            <View className="bg-slate-900 border border-slate-800 rounded-3xl p-5 mb-4 relative">
+            <TouchableOpacity
+                activeOpacity={0.95}
+                onPress={() => router.push(`/worker-profile?workerId=${item._id}`)}
+                className="bg-slate-900 border border-slate-800/80 rounded-3xl p-5 mb-4 relative shadow-lg shadow-slate-950/40"
+            >
                 {/* Heart/Favorite Icon */}
                 <TouchableOpacity
                     onPress={() => toggleFavorite(item._id)}
-                    className="absolute top-5 right-5 z-10"
+                    className="absolute top-5 right-5 z-10 w-9 h-9 items-center justify-center rounded-full bg-slate-950/40 border border-slate-850"
                 >
                     <Ionicons
                         name={isFav ? "heart" : "heart-outline"}
-                        size={22}
+                        size={18}
                         color={isFav ? "#ef4444" : "#94a3b8"}
                     />
                 </TouchableOpacity>
 
                 <View className="flex-row">
-                    {/* Avatar with Availability Overlaid Badge */}
+                    {/* Avatar with Status indicator dot */}
                     <View className="mr-4 relative">
                         {profileImage ? (
                             <Image
                                 source={{ uri: profileImage }}
-                                className="w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-800"
+                                className="w-16 h-16 rounded-full bg-slate-800 border border-slate-700"
                             />
                         ) : (
-                            <View className="w-20 h-20 rounded-full bg-indigo-600 items-center justify-center border-2 border-slate-800">
-                                <Text className="text-white text-2xl font-bold">
+                            <View className="w-16 h-16 rounded-full bg-indigo-650 items-center justify-center border border-indigo-500/30">
+                                <Text className="text-white text-xl font-bold">
                                     {getInitials(fullName)}
                                 </Text>
                             </View>
                         )}
-                        <View className={`absolute bottom-0 left-0 right-0 py-0.5 rounded-full items-center ${
-                            isAvailable ? "bg-emerald-500" : "bg-amber-500"
-                        }`}>
-                            <Text className="text-slate-950 text-[9px] font-extrabold uppercase tracking-wide">
-                                {isAvailable ? "Available" : "Busy"}
-                            </Text>
-                        </View>
+                        <View className={`absolute bottom-0 right-0 w-4.5 h-4.5 rounded-full border-2 border-slate-900 ${isAvailable ? "bg-emerald-500" : "bg-amber-500"
+                            }`} />
                     </View>
 
                     {/* Information */}
-                    <View className="flex-1 pr-6">
-                        <Text className="text-white font-extrabold text-lg mr-2" numberOfLines={1}>
+                    <View className="flex-1 pr-10">
+                        <Text className="text-white font-extrabold text-base tracking-tight" numberOfLines={1}>
                             {fullName}
                         </Text>
                         <Text className="text-indigo-400 text-xs font-semibold mt-0.5">
@@ -190,68 +222,67 @@ export default function CategoryWorkersScreen() {
 
                         {/* Rating & Exp */}
                         <View className="flex-row items-center mt-2.5">
-                            <Ionicons name="star" size={14} color="#f59e0b" />
+                            <Ionicons name="star" size={12} color="#f59e0b" />
                             <Text className="text-white text-xs font-extrabold ml-1">
                                 {item.averageRating > 0 ? item.averageRating.toFixed(1) : "New"}
                             </Text>
                             <Text className="text-slate-400 text-[10px] font-semibold ml-0.5">
                                 ({item.totalReviews})
                             </Text>
-                            <Text className="text-slate-700 text-xs mx-2">•</Text>
-                            <Text className="text-slate-300 text-xs font-semibold">
+                            <Text className="text-slate-700 text-xs mx-1.5">•</Text>
+                            <Text className="text-slate-300 text-[11px] font-semibold">
                                 {item.experienceYears} Years Exp.
                             </Text>
                         </View>
 
-                        {/* Location/Distance */}
-                        <View className="flex-row items-center mt-2">
-                            <Ionicons name="location-outline" size={14} color="#6366f1" />
-                            <Text className="text-slate-400 text-xs font-semibold ml-1">
-                                {item.distance !== undefined && item.distance !== 999999
-                                    ? `${item.distance.toFixed(1)} km away`
-                                    : cityLoc}
-                            </Text>
-                        </View>
-                    </View>
+                        {/* Location/Distance & Available badge */}
+                        <View className="flex-row items-center justify-between mt-2 pr-4">
+                            <View className="flex-row items-center">
+                                <Ionicons name="location-outline" size={13} color="#6366f1" />
+                                <Text className="text-slate-400 text-xs font-semibold ml-1">
+                                    {item.distance !== undefined && item.distance !== 999999
+                                        ? `${item.distance.toFixed(1)} km away`
+                                        : cityLoc}
+                                </Text>
+                            </View>
 
-                    {/* Available Now Status Circle Dot (Right Side) */}
-                    <View className="absolute right-0 top-12 flex-row items-center bg-slate-950 border border-slate-800 rounded-full px-2 py-1">
-                        <View className={`w-2.5 h-2.5 rounded-full mr-1.5 ${
-                            isAvailable ? "bg-emerald-500" : "bg-amber-500"
-                        }`} />
-                        <Text className="text-slate-300 text-[10px] font-bold">
-                            {isAvailable ? "Available Now" : "Busy"}
-                        </Text>
+                            <View className="bg-slate-950 border border-slate-800/80 rounded-full px-2 py-0.5 flex-row items-center">
+                                <View className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isAvailable ? "bg-emerald-500" : "bg-amber-500"
+                                    }`} />
+                                <Text className={`text-[9px] font-extrabold uppercase tracking-wider ${isAvailable ? "text-emerald-400" : "text-amber-400"
+                                    }`}>
+                                    {isAvailable ? "Available" : "Busy"}
+                                </Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
 
-                {/* Skill Badges list */}
-                <View className="flex-row flex-wrap gap-1.5 mt-4 pt-3 border-t border-slate-800/60">
-                    {skillsList.slice(0, 3).map((skill, idx) => (
-                        <View key={idx} className="bg-slate-950 border border-slate-800 px-3 py-1 rounded-full">
-                            <Text className="text-slate-300 text-[10px] font-semibold">
-                                {skill}
-                            </Text>
-                        </View>
-                    ))}
-                    {skillsList.length > 3 && (
-                        <View className="bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-full">
-                            <Text className="text-indigo-400 text-[10px] font-bold">
-                                +{skillsList.length - 3}
-                            </Text>
-                        </View>
-                    )}
-                </View>
+                {/* Skills & Action bottom Row */}
+                <View className="flex-row justify-between items-center mt-4 pt-3.5 border-t border-slate-800/60">
+                    <View className="flex-row flex-wrap gap-1.5 flex-1 mr-2">
+                        {skillsList.slice(0, 3).map((skill, idx) => (
+                            <View key={idx} className="bg-indigo-500/5 border border-indigo-500/10 px-2.5 py-1 rounded-xl">
+                                <Text className="text-indigo-300 text-[9px] font-semibold">
+                                    {skill}
+                                </Text>
+                            </View>
+                        ))}
+                        {skillsList.length > 3 && (
+                            <View className="bg-slate-950 border border-slate-800 px-2 py-1 rounded-xl">
+                                <Text className="text-slate-400 text-[9px] font-extrabold">
+                                    +{skillsList.length - 3}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
 
-                {/* View Profile Button */}
-                <TouchableOpacity
-                    onPress={() => router.push(`/worker-profile?workerId=${item._id}`)}
-                    className="bg-indigo-600 px-5 py-2.5 rounded-2xl self-end mt-4 active:opacity-90 flex-row items-center"
-                >
-                    <Text className="text-white font-bold text-xs mr-1">View Profile</Text>
-                    <Ionicons name="chevron-forward" size={14} color="white" />
-                </TouchableOpacity>
-            </View>
+                    <View className="bg-indigo-600 px-4 py-2 rounded-2xl flex-row items-center border border-indigo-500/30 shadow-md shadow-indigo-500/20">
+                        <Text className="text-white font-black text-[10px] uppercase tracking-wider mr-1">View Profile</Text>
+                        <Ionicons name="chevron-forward-circle" size={14} color="white" />
+                    </View>
+                </View>
+            </TouchableOpacity>
         );
     };
 
@@ -287,11 +318,10 @@ export default function CategoryWorkersScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => setShowFilters(!showFilters)}
-                        className={`w-10 h-10 border rounded-xl items-center justify-center ${
-                            showFilters || cityFilter || minRatingFilter > 0 || minExperienceFilter > 0
-                                ? "bg-indigo-600/20 border-indigo-500"
-                                : "bg-slate-900 border-slate-800"
-                        }`}
+                        className={`w-10 h-10 border rounded-xl items-center justify-center ${showFilters || cityFilter || minRatingFilter > 0 || minExperienceFilter > 0
+                            ? "bg-indigo-600/20 border-indigo-500"
+                            : "bg-slate-900 border-slate-800"
+                            }`}
                     >
                         <Ionicons name="options-outline" size={18} color={showFilters || cityFilter || minRatingFilter > 0 || minExperienceFilter > 0 ? "#818cf8" : "white"} />
                     </TouchableOpacity>

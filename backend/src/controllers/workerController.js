@@ -240,6 +240,7 @@ export const createOrUpdateProfile = async (req, res) => {
             longitude,
             whatsappNumber,
             availabilityStatus,
+            profileImage,
         } = req.body;
 
         let address = req.body.address;
@@ -260,6 +261,10 @@ export const createOrUpdateProfile = async (req, res) => {
             } catch (err) {
                 console.error("Nominatim Reverse Geocoding failed:", err.message);
             }
+        }
+
+        if (profileImage !== undefined) {
+            await User.findByIdAndUpdate(req.user._id, { profileImage });
         }
 
         let profile = await WorkerProfile.findOne({ userId: req.user._id });

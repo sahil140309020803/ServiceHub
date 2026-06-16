@@ -45,7 +45,7 @@ export default function TabsLayout() {
                 options={{
                     title: "Saved",
                     headerShown: false,
-                    tabBarButton: isWorker ? () => null : undefined, // Hide for workers
+                    href: isWorker ? null : undefined,
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="heart" size={size} color={color} />
                     ),
@@ -56,7 +56,7 @@ export default function TabsLayout() {
                 options={{
                     title: "Gallery",
                     headerShown: false,
-                    tabBarButton: !isWorker ? () => null : undefined, // Hide for customers
+                    href: !isWorker ? null : undefined,
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="images" size={size} color={color} />
                     ),
@@ -66,8 +66,8 @@ export default function TabsLayout() {
                 name="reviews"
                 options={{
                     title: "Reviews",
-                    headerShown: true,
-                    tabBarButton: !isWorker ? () => null : undefined, // Hide for customers
+                    headerShown: false,
+                    href: !isWorker ? null : undefined,
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="star" size={size} color={color} />
                     ),
