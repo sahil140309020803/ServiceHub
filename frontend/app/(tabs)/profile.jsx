@@ -19,6 +19,7 @@ import { useColorScheme } from "nativewind";
 import useAuthStore from "../../src/store/useAuthStore";
 import api from "../../src/services/api";
 import useLocationStore from "../../src/store/useLocationStore";
+import Toast from "react-native-toast-message";
 
 export default function ProfileScreen() {
     const { user, logout } = useAuthStore();
@@ -180,7 +181,11 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
     // Save Handlers
     const handleSaveInfo = async () => {
         if (!editProfession.trim()) {
-            Alert.alert("Error", "Profession description is required");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: "Profession description is required",
+            });
             return;
         }
         try {
@@ -192,10 +197,17 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
             if (res.data.success) {
                 setProfile(res.data.data);
                 setInfoModalVisible(false);
-                Alert.alert("Success", "Professional details updated");
+                Toast.show({
+                    type: "success",
+                    text1: "Professional details updated",
+                });
             }
         } catch (e) {
-            Alert.alert("Error", e.response?.data?.message || "Failed to update professional info");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: e.response?.data?.message || "Failed to update professional info",
+            });
         }
     };
 
@@ -208,10 +220,17 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
             if (res.data.success) {
                 setProfile(res.data.data);
                 setAboutModalVisible(false);
-                Alert.alert("Success", "About description updated");
+                Toast.show({
+                    type: "success",
+                    text1: "About description updated",
+                });
             }
         } catch (e) {
-            Alert.alert("Error", e.response?.data?.message || "Failed to update About description");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: e.response?.data?.message || "Failed to update About description",
+            });
         }
     };
 
@@ -236,10 +255,17 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
             if (res.data.success) {
                 setProfile(res.data.data);
                 setSkillsModalVisible(false);
-                Alert.alert("Success", "Specialist skills updated");
+                Toast.show({
+                    type: "success",
+                    text1: "Specialist skills updated",
+                });
             }
         } catch (e) {
-            Alert.alert("Error", e.response?.data?.message || "Failed to update specialist skills");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: e.response?.data?.message || "Failed to update specialist skills",
+            });
         }
     };
 
@@ -260,10 +286,17 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
             if (res.data.success) {
                 setProfile(res.data.data);
                 setCategoriesModalVisible(false);
-                Alert.alert("Success", "Service categories updated");
+                Toast.show({
+                    type: "success",
+                    text1: "Service categories updated",
+                });
             }
         } catch (e) {
-            Alert.alert("Error", e.response?.data?.message || "Failed to update service categories");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: e.response?.data?.message || "Failed to update service categories",
+            });
         }
     };
 
@@ -276,10 +309,17 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
             if (res.data.success) {
                 setProfile(res.data.data);
                 setAreasModalVisible(false);
-                Alert.alert("Success", "Service areas updated");
+                Toast.show({
+                    type: "success",
+                    text1: "Service areas updated",
+                });
             }
         } catch (e) {
-            Alert.alert("Error", e.response?.data?.message || "Failed to update service areas");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: e.response?.data?.message || "Failed to update service areas",
+            });
         }
     };
 
@@ -301,7 +341,11 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
         if (resolved) {
             await handleSaveLocation(resolved);
         } else {
-            Alert.alert("Location Error", "Could not fetch GPS location. Make sure GPS permissions are enabled.");
+            Toast.show({
+                type: "error",
+                text1: "Location Error",
+                text2: "Could not fetch GPS location. Make sure GPS permissions are enabled.",
+            });
         }
         setIsDetectingLoc(false);
     };
@@ -318,10 +362,17 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 await setLocation(chosenLoc); // Sync with local location store (active home location)
                 setProfile(res.data.data);
                 setLocationModalVisible(false);
-                Alert.alert("Success", "Profile address and active home location synchronized!");
+                Toast.show({
+                    type: "success",
+                    text1: "Current Service location updated",
+                });
             }
         } catch (e) {
-            Alert.alert("Error", e.response?.data?.message || "Failed to update profile location");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: e.response?.data?.message || "Failed to update profile location",
+            });
         }
     };
 
@@ -954,8 +1005,8 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                         key={cat._id}
                                         onPress={() => handleToggleCategory(cat._id)}
                                         className={`flex-row items-center justify-between p-3.5 rounded-xl border mb-2 active:opacity-85 ${editSelectedCategories.includes(cat._id)
-                                                ? "bg-indigo-500/10 border-indigo-500"
-                                                : "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
+                                            ? "bg-indigo-500/10 border-indigo-500"
+                                            : "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
                                             }`}
                                     >
                                         <Text className="text-slate-900 dark:text-white text-sm font-semibold">{cat.name}</Text>

@@ -22,6 +22,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useColorScheme } from "nativewind";
 import useAuthStore from "../src/store/useAuthStore";
 import api from "../src/services/api";
+import Toast from "react-native-toast-message";
 
 // Validation Schema
 const editProfileSchema = z.object({
@@ -45,7 +46,7 @@ export default function EditProfileScreen() {
     const { user, updateProfile, isLoading, error: serverError, clearError, token } = useAuthStore();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
-    
+
     const [profileImage, setProfileImage] = useState(user?.profileImage || "");
     const [isUploading, setIsUploading] = useState(false);
 
@@ -74,7 +75,11 @@ export default function EditProfileScreen() {
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
-            Alert.alert("Permission Denied", "We need gallery permissions to select a profile photo.");
+            Toast.show({
+                type: "error",
+                text1: "Permission Denied",
+                text2: "We need gallery permissions to select a profile photo.",
+            });
             return;
         }
 
@@ -95,11 +100,11 @@ export default function EditProfileScreen() {
         setIsUploading(true);
         try {
             const formData = new FormData();
-            
+
             // Format filename and type
             const uriParts = uri.split(".");
             const fileType = uriParts[uriParts.length - 1];
-            
+
             formData.append("avatar", {
                 uri,
                 name: `avatar.${fileType}`,
@@ -115,13 +120,24 @@ export default function EditProfileScreen() {
 
             if (response.data.success) {
                 setProfileImage(response.data.url);
-                Alert.alert("Success", "Photo uploaded successfully!");
+                Toast.show({
+                    type: "success",
+                    text1: "Photo uploaded successfully!",
+                });
             } else {
-                Alert.alert("Upload Failed", response.data.message || "Could not upload image");
+                Toast.show({
+                    type: "error",
+                    text1: "Upload Failed",
+                    text2: response.data.message || "Could not upload image",
+                });
             }
         } catch (err) {
             console.error("Image upload error:", err);
-            Alert.alert("Error", "An error occurred while uploading the image.");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: "An error occurred while uploading the image.",
+            });
         } finally {
             setIsUploading(false);
         }
@@ -130,9 +146,11 @@ export default function EditProfileScreen() {
     const onSubmit = async (data) => {
         const success = await updateProfile(data.fullName, data.email, data.phoneNumber, profileImage);
         if (success) {
-            Alert.alert("Success", "Profile updated successfully!", [
-                { text: "OK", onPress: () => router.canGoBack() ? router.back() : router.replace("/(tabs)/profile") }
-            ]);
+            Toast.show({
+                type: "success",
+                text1: "Profile updated successfully!",
+            });
+            router.canGoBack() ? router.back() : router.replace("/(tabs)/profile");
         }
     };
 
@@ -155,7 +173,7 @@ export default function EditProfileScreen() {
                     <View className="w-10" />
                 </View>
 
-                <ScrollView 
+                <ScrollView
                     contentContainerStyle={{ flexGrow: 1 }}
                     keyboardShouldPersistTaps="handled"
                 >
@@ -173,8 +191,8 @@ export default function EditProfileScreen() {
 
                             {/* Profile Image Picker */}
                             <View className="items-center my-4">
-                                <TouchableOpacity 
-                                    onPress={pickImage} 
+                                <TouchableOpacity
+                                    onPress={pickImage}
                                     disabled={isUploading}
                                     className="relative active:opacity-90"
                                 >
@@ -182,8 +200,8 @@ export default function EditProfileScreen() {
                                         {isUploading ? (
                                             <ActivityIndicator size="small" color="#6366f1" />
                                         ) : profileImage ? (
-                                            <Image 
-                                                source={{ uri: profileImage }} 
+                                            <Image
+                                                source={{ uri: profileImage }}
                                                 className="w-full h-full"
                                             />
                                         ) : (
@@ -192,7 +210,7 @@ export default function EditProfileScreen() {
                                             </View>
                                         )}
                                     </View>
-                                    
+
                                     {/* Edit Badge overlay */}
                                     <View className="absolute bottom-0 right-0 bg-indigo-600 border border-white dark:border-slate-950 w-8 h-8 rounded-full items-center justify-center shadow-md">
                                         <Ionicons name="camera" size={16} color="white" />

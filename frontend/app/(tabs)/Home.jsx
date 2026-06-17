@@ -19,6 +19,7 @@ import useAuthStore from "../../src/store/useAuthStore";
 import useLocationStore from "../../src/store/useLocationStore";
 import api from "../../src/services/api";
 import storage from "../../src/utils/storage";
+import Toast from "react-native-toast-message";
 
 // Helper to resolve nice colors and styles for dynamic categories
 const getCategoryStyles = (name) => {
@@ -174,11 +175,17 @@ export default function HomeDashboard() {
             });
             if (res.data.success) {
                 setWorkerProfile(res.data.data);
-                Alert.alert("Status Updated", `You are now ${nextStatus === "available" ? "Online" : "Offline"}`);
+                Toast.show({
+                    type: 'success',
+                    text1: `You are ${nextStatus === "available" ? "Online" : "Offline"} now`,
+                });
             }
         } catch (err) {
             console.error("Failed to toggle availability status:", err);
-            Alert.alert("Error", err.response?.data?.message || "Failed to toggle status");
+            Toast.show({
+                type: 'error',
+                text1: `Failed to toggle availability status`,
+            });
         } finally {
             setIsTogglingAvailability(false);
         }
@@ -204,7 +211,11 @@ export default function HomeDashboard() {
 
     const toggleFavorite = async (workerId) => {
         if (!user) {
-            Alert.alert("Login Required", "Please log in to add favorites.");
+            Toast.show({
+                type: "error",
+                text1: "Login Required",
+                text2: "Please log in to add favorites.",
+            });
             return;
         }
         try {
@@ -240,7 +251,10 @@ export default function HomeDashboard() {
             const response = await api.delete(`/api/extensions/locations/${locId}`);
             if (response.data.success) {
                 setSavedLocations(prev => prev.filter(l => l._id !== locId));
-                Alert.alert("Deleted", "Saved address removed.");
+                Toast.show({
+                    type: "success",
+                    text1: "Saved address removed.",
+                });
             }
         } catch (err) {
             console.error("Failed to delete saved location:", err);
@@ -399,10 +413,16 @@ export default function HomeDashboard() {
             await setLocation(tempResolvedLocation);
             setTempResolvedLocation(null);
             setShowLocationModal(false);
-            Alert.alert("Success", isWorker ? "Service location updated!" : `Active address set to ${selectedLabel}!`);
+            Toast.show({
+                type: "success",
+                text1: isWorker ? "Service location updated!" : `Active address set to ${selectedLabel}!`,
+            });
         } catch (err) {
             console.error("Error saving address details:", err);
-            Alert.alert("Error", "Failed to save address details.");
+            Toast.show({
+                type: "error",
+                text1: "Failed to save address details.",
+            });
         } finally {
             setIsSavingAddress(false);
         }
@@ -1066,7 +1086,11 @@ export default function HomeDashboard() {
                                     if (loc) {
                                         setTempResolvedLocation(loc);
                                     } else {
-                                        Alert.alert("Error", "Could not fetch GPS coordinates. Please make sure location permissions are enabled.");
+                                        Toast.show({
+                                            type: "error",
+                                            text1: "Error",
+                                            text2: "Could not fetch GPS coordinates. Please make sure location permissions are enabled.",
+                                        });
                                     }
                                 }}
                                 disabled={isFetchingGps}

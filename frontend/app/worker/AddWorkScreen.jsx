@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import * as ImagePicker from "expo-image-picker";
 import { uploadGalleryItem } from "../../src/api/galleryApi";
+import Toast from "react-native-toast-message";
 
 export default function AddWorkScreen() {
     const router = useRouter();
@@ -31,7 +32,11 @@ export default function AddWorkScreen() {
         // Request library permissions
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
-            Alert.alert("Permission Required", "Please grant photo library access to upload project photos.");
+            Toast.show({
+                type: "error",
+                text1: "Permission Required",
+                text2: "Please grant photo library access to upload project photos.",
+            });
             return;
         }
 
@@ -52,25 +57,40 @@ export default function AddWorkScreen() {
             }
         } catch (err) {
             console.error("Error picking image:", err);
-            Alert.alert("Error", "Failed to select image from gallery.");
+            Toast.show({
+                type: "error",
+                text1: "Failed to select image from gallery.",
+            });
         }
     };
 
     const handleUpload = async () => {
         if (!selectedImage) {
-            Alert.alert("Error", "Please select a project photo to upload.");
+            Toast.show({
+                type: "error",
+                text1: "Please select a project photo to upload.",
+            });
             return;
         }
         if (!title.trim()) {
-            Alert.alert("Error", "Project title is required.");
+            Toast.show({
+                type: "error",
+                text1: "Project title is required.",
+            });
             return;
         }
         if (title.length > 100) {
-            Alert.alert("Error", "Title cannot exceed 100 characters.");
+            Toast.show({
+                type: "error",
+                text1: "Title cannot exceed 100 characters.",
+            });
             return;
         }
         if (description.length > 500) {
-            Alert.alert("Error", "Description cannot exceed 500 characters.");
+            Toast.show({
+                type: "error",
+                text1: "Description cannot exceed 500 characters.",
+            });
             return;
         }
 
@@ -87,23 +107,26 @@ export default function AddWorkScreen() {
 
             const res = await uploadGalleryItem(formData);
             if (res.data.success) {
-                Alert.alert("Success", "Project photo uploaded successfully!", [
-                    {
-                        text: "OK",
-                        onPress: () => {
-                            if (router.canGoBack()) {
-                                router.back();
-                            } else {
-                                router.replace("/(tabs)/gallery");
-                            }
+                Toast.show({
+                    type: "success",
+                    text1: "Project photo uploaded successfully!",
+                    onHide: () => {
+                        if (router.canGoBack()) {
+                            router.back();
+                        } else {
+                            router.replace("/(tabs)/gallery");
                         }
                     }
-                ]);
+                });
             }
         } catch (err) {
             console.error("Gallery upload error:", err);
             const msg = err.response?.data?.message || "Failed to upload project photo. Please try again.";
-            Alert.alert("Upload Failed", msg);
+            Toast.show({
+                type: "error",
+                text1: "Upload Failed",
+                text2: msg,
+            });
         } finally {
             setIsUploading(false);
         }
