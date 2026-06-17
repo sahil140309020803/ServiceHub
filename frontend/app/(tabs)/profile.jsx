@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
+import { useColorScheme } from "nativewind";
 import useAuthStore from "../../src/store/useAuthStore";
 import api from "../../src/services/api";
 import useLocationStore from "../../src/store/useLocationStore";
@@ -37,6 +38,8 @@ export default function ProfileScreen() {
 // WORKER PROFILE VIEW (FULL DASHBOARD WITH COMPONENT EDITORS)
 // ----------------------------------------------------
 function WorkerProfileTab({ user, logout, router, isFocused }) {
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
     const [profile, setProfile] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [reviews, setReviews] = useState([]);
@@ -320,7 +323,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
 
     if (isLoading) {
         return (
-            <SafeAreaView className="flex-1 bg-slate-950 justify-center items-center">
+            <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950 justify-center items-center">
                 <ActivityIndicator size="large" color="#6366f1" />
             </SafeAreaView>
         );
@@ -330,44 +333,44 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
     const profileImage = user?.profileImage || "";
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950" edges={["bottom"]}>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={["bottom"]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Hero Avatar Card */}
                 {profile ? (
-                    <View className="items-center py-6 bg-slate-900 border-b border-slate-800 relative">
+                    <View className="items-center py-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 relative">
                         {/* Edit Profile Info Trigger */}
                         <TouchableOpacity
                             onPress={() => setInfoModalVisible(true)}
-                            className="absolute top-4 right-4 bg-slate-800/80 border border-slate-700/50 p-2.5 rounded-full flex-row items-center active:opacity-85 shadow-sm"
+                            className="absolute top-4 right-4 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 p-2.5 rounded-full flex-row items-center active:opacity-85 shadow-sm"
                         >
-                            <Ionicons name="create-outline" size={18} color="#818cf8" />
-                            <Text className="text-indigo-400 text-xs font-bold ml-1">Edit</Text>
+                            <Ionicons name="create-outline" size={18} color="#6366f1" />
+                            <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold ml-1">Edit</Text>
                         </TouchableOpacity>
 
                         <View className="relative">
                             {profileImage ? (
                                 <Image
                                     source={{ uri: profileImage }}
-                                    className="w-24 h-24 rounded-2xl border-2 border-slate-700 bg-slate-800"
+                                    className="w-24 h-24 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800"
                                 />
                             ) : (
-                                <View className="w-24 h-24 bg-indigo-600 rounded-2xl items-center justify-center border-2 border-slate-700 shadow-xl shadow-indigo-500/20">
+                                <View className="w-24 h-24 bg-indigo-600 rounded-2xl items-center justify-center border-2 border-slate-200 dark:border-slate-700 shadow-xl shadow-indigo-500/20">
                                     <Text className="text-white text-3xl font-black">
                                         {getInitials(fullName)}
                                     </Text>
                                 </View>
                             )}
                             {profile.isVerified && (
-                                <View className="absolute bottom-[-6] right-[-6] bg-indigo-500 rounded-full p-1 border-2 border-slate-900">
+                                <View className="absolute bottom-[-6] right-[-6] bg-indigo-500 rounded-full p-1 border-2 border-white dark:border-slate-900">
                                     <Ionicons name="checkmark" size={16} color="white" />
                                 </View>
                             )}
                         </View>
 
-                        <Text className="text-2xl font-extrabold text-white mt-4">{fullName}</Text>
-                        <Text className="text-slate-400 text-sm font-semibold mt-1">
+                        <Text className="text-2xl font-extrabold text-slate-900 dark:text-white mt-4">{fullName}</Text>
+                        <Text className="text-slate-500 dark:text-slate-400 text-sm font-semibold mt-1">
                             {profile.profession}
                         </Text>
 
@@ -375,46 +378,46 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         <View className="flex-row justify-around w-full mt-6 px-4">
                             <View className="items-center flex-1">
                                 <Ionicons name="briefcase-outline" size={16} color="#6366f1" />
-                                <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                                <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                                     Experience
                                 </Text>
-                                <Text className="text-white font-extrabold text-base mt-0.5">
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-base mt-0.5">
                                     {profile.experienceYears} Years
                                 </Text>
                             </View>
 
-                            <View className="w-[1] h-8 bg-slate-800 self-center" />
+                            <View className="w-[1] h-8 bg-slate-200 dark:bg-slate-800 self-center" />
 
                             <View className="items-center flex-1">
                                 <Ionicons name="star" size={16} color="#f59e0b" />
-                                <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                                <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                                     Rating
                                 </Text>
-                                <Text className="text-white font-extrabold text-base mt-0.5">
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-base mt-0.5">
                                     {profile.averageRating > 0 ? profile.averageRating.toFixed(1) : "New"}
                                 </Text>
                             </View>
 
-                            <View className="w-[1] h-8 bg-slate-800 self-center" />
+                            <View className="w-[1] h-8 bg-slate-200 dark:bg-slate-800 self-center" />
 
                             <View className="items-center flex-1">
                                 <Ionicons name="eye-outline" size={16} color="#10b981" />
-                                <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                                <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                                     Views
                                 </Text>
-                                <Text className="text-white font-extrabold text-base mt-0.5">
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-base mt-0.5">
                                     {profile.profileViews || 0}
                                 </Text>
                             </View>
                         </View>
                     </View>
                 ) : (
-                    <View className="bg-slate-900 p-8 border-b border-slate-800 items-center justify-center">
+                    <View className="bg-white dark:bg-slate-900 p-8 border-b border-slate-200 dark:border-slate-800 items-center justify-center">
                         <Ionicons name="construct-outline" size={40} color="#6366f1" />
-                        <Text className="text-white font-extrabold text-base mt-4 text-center">
+                        <Text className="text-slate-900 dark:text-white font-extrabold text-base mt-4 text-center">
                             Professional Profile Incomplete
                         </Text>
-                        <Text className="text-slate-400 text-xs mt-1 text-center max-w-xs leading-relaxed">
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1 text-center max-w-xs leading-relaxed">
                             Complete your professional settings to activate your account and start receiving leads.
                         </Text>
                         <TouchableOpacity
@@ -433,17 +436,17 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             {/* About section */}
                             <View className="gap-y-2">
                                 <View className="flex-row justify-between items-center mb-1">
-                                    <Text className="text-white font-extrabold text-base">About Me</Text>
+                                    <Text className="text-slate-900 dark:text-white font-extrabold text-base">About Me</Text>
                                     <TouchableOpacity
                                         onPress={() => setAboutModalVisible(true)}
                                         className="bg-indigo-600/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl flex-row items-center space-x-1 active:opacity-85"
                                     >
-                                        <Ionicons name="pencil-sharp" size={12} color="#818cf8" />
-                                        <Text className="text-indigo-400 font-bold text-xs ml-1">Edit</Text>
+                                        <Ionicons name="pencil-sharp" size={12} color="#6366f1" />
+                                        <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-xs ml-1">Edit</Text>
                                     </TouchableOpacity>
                                 </View>
-                                <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 border-l-4 border-l-indigo-500 shadow-sm">
-                                    <Text className="text-slate-300 text-sm leading-relaxed">
+                                <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 border-l-4 border-l-indigo-500 shadow-sm">
+                                    <Text className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
                                         {profile.about || "Describe your services, charges, and expertise."}
                                     </Text>
                                 </View>
@@ -453,13 +456,13 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             {gallery && gallery.length > 0 && (
                                 <View className="gap-y-3">
                                     <View className="flex-row justify-between items-center mb-1">
-                                        <Text className="text-white font-extrabold text-base">Completed Projects ({gallery.length})</Text>
+                                        <Text className="text-slate-900 dark:text-white font-extrabold text-base">Completed Projects ({gallery.length})</Text>
                                         <TouchableOpacity
                                             onPress={() => router.push("/worker/GalleryScreen")}
                                             className="bg-indigo-600/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl flex-row items-center space-x-1 active:opacity-85"
                                         >
-                                            <Ionicons name="images-outline" size={12} color="#818cf8" />
-                                            <Text className="text-indigo-400 font-bold text-xs ml-1">Manage Gallery</Text>
+                                            <Ionicons name="images-outline" size={12} color="#6366f1" />
+                                            <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-xs ml-1">Manage Gallery</Text>
                                         </TouchableOpacity>
                                     </View>
                                     <ScrollView
@@ -472,7 +475,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                                 key={item._id}
                                                 onPress={() => router.push(`/worker/GalleryDetailsScreen?galleryId=${item._id}`)}
                                                 activeOpacity={0.95}
-                                                className="bg-slate-900 border border-slate-850 rounded-2xl overflow-hidden mr-3.5 relative"
+                                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden mr-3.5 relative"
                                                 style={{ width: 140, height: 140 }}
                                             >
                                                 <Image
@@ -504,13 +507,13 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             {/* Skills section (With Separate Edit Button) */}
                             <View className="gap-y-2.5">
                                 <View className="flex-row justify-between items-center">
-                                    <Text className="text-white font-extrabold text-base">Specialist Skills</Text>
+                                    <Text className="text-slate-900 dark:text-white font-extrabold text-base">Specialist Skills</Text>
                                     <TouchableOpacity
                                         onPress={() => setSkillsModalVisible(true)}
                                         className="bg-indigo-600/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl flex-row items-center space-x-1 active:opacity-85"
                                     >
-                                        <Ionicons name="pencil-sharp" size={12} color="#818cf8" />
-                                        <Text className="text-indigo-400 font-bold text-xs ml-1">Edit Skills</Text>
+                                        <Ionicons name="pencil-sharp" size={12} color="#6366f1" />
+                                        <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-xs ml-1">Edit Skills</Text>
                                     </TouchableOpacity>
                                 </View>
 
@@ -521,8 +524,8 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                                 key={idx}
                                                 className="bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-2 rounded-xl flex-row items-center"
                                             >
-                                                <Ionicons name="sparkles-outline" size={10} color="#818cf8" style={{ marginRight: 6 }} />
-                                                <Text className="text-indigo-300 text-xs font-bold">
+                                                <Ionicons name="sparkles-outline" size={10} color={isDark ? "#818cf8" : "#6366f1"} style={{ marginRight: 6 }} />
+                                                <Text className="text-indigo-600 dark:text-indigo-300 text-xs font-bold">
                                                     {skill}
                                                 </Text>
                                             </View>
@@ -536,13 +539,13 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             {/* Service Categories */}
                             <View className="gap-y-2">
                                 <View className="flex-row justify-between items-center mb-1">
-                                    <Text className="text-white font-extrabold text-base">Service Categories</Text>
+                                    <Text className="text-slate-900 dark:text-white font-extrabold text-base">Service Categories</Text>
                                     <TouchableOpacity
                                         onPress={openCategoriesModal}
                                         className="bg-indigo-600/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl flex-row items-center space-x-1 active:opacity-85"
                                     >
-                                        <Ionicons name="pencil-sharp" size={12} color="#818cf8" />
-                                        <Text className="text-indigo-400 font-bold text-xs ml-1">Edit</Text>
+                                        <Ionicons name="pencil-sharp" size={12} color="#6366f1" />
+                                        <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-xs ml-1">Edit</Text>
                                     </TouchableOpacity>
                                 </View>
                                 {profile.serviceCategories?.length > 0 ? (
@@ -553,7 +556,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                                 className="bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2 rounded-xl flex-row items-center"
                                             >
                                                 <Ionicons name="pricetag-outline" size={10} color="#10b981" style={{ marginRight: 6 }} />
-                                                <Text className="text-emerald-300 text-xs font-bold">
+                                                <Text className="text-emerald-600 dark:text-emerald-300 text-xs font-bold">
                                                     {cat.name}
                                                 </Text>
                                             </View>
@@ -567,21 +570,21 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             {/* Service Areas */}
                             <View className="gap-y-2">
                                 <View className="flex-row justify-between items-center mb-1">
-                                    <Text className="text-white font-extrabold text-base">Service Areas</Text>
+                                    <Text className="text-slate-900 dark:text-white font-extrabold text-base">Service Areas</Text>
                                     <TouchableOpacity
                                         onPress={() => setAreasModalVisible(true)}
                                         className="bg-indigo-600/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl flex-row items-center space-x-1 active:opacity-85"
                                     >
-                                        <Ionicons name="pencil-sharp" size={12} color="#818cf8" />
-                                        <Text className="text-indigo-400 font-bold text-xs ml-1">Edit</Text>
+                                        <Ionicons name="pencil-sharp" size={12} color="#6366f1" />
+                                        <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-xs ml-1">Edit</Text>
                                     </TouchableOpacity>
                                 </View>
                                 {profile.serviceAreas?.length > 0 ? (
-                                    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-y-3 shadow-sm">
+                                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 gap-y-3 shadow-sm">
                                         {profile.serviceAreas.map((area, idx) => (
                                             <View key={idx} className="flex-row items-center">
                                                 <Ionicons name="navigate-outline" size={14} color="#6366f1" />
-                                                <Text className="text-slate-300 text-xs font-semibold ml-3">
+                                                <Text className="text-slate-700 dark:text-slate-300 text-xs font-semibold ml-3">
                                                     {area.area}, {area.city} ({area.state})
                                                 </Text>
                                             </View>
@@ -595,19 +598,19 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             {/* Physical Address (Sync with Home Location + Change Icon Button) */}
                             <View className="gap-y-2">
                                 <View className="flex-row justify-between items-center mb-1">
-                                    <Text className="text-white font-extrabold text-base">Location Address</Text>
+                                    <Text className="text-slate-900 dark:text-white font-extrabold text-base">Location Address</Text>
                                     <TouchableOpacity
                                         onPress={() => setLocationModalVisible(true)}
                                         className="bg-indigo-600/10 border border-indigo-500/20 px-3.5 py-1.5 rounded-xl flex-row items-center space-x-1.5 active:opacity-85"
                                     >
-                                        <Ionicons name="location-outline" size={12} color="#818cf8" />
-                                        <Text className="text-indigo-400 font-bold text-xs ml-1">Change Location</Text>
+                                        <Ionicons name="location-outline" size={12} color="#6366f1" />
+                                        <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-xs ml-1">Change Location</Text>
                                     </TouchableOpacity>
                                 </View>
                                 {profile.address ? (
-                                    <View className="flex-row items-start bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+                                    <View className="flex-row items-start bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
                                         <Ionicons name="location-outline" size={18} color="#94a3b8" style={{ marginTop: 2 }} />
-                                        <Text className="text-slate-300 text-sm ml-3 flex-1 leading-relaxed">
+                                        <Text className="text-slate-700 dark:text-slate-300 text-sm ml-3 flex-1 leading-relaxed">
                                             {profile.address}
                                         </Text>
                                     </View>
@@ -617,15 +620,15 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             </View>
 
                             {/* Reviews Section */}
-                            <View className="gap-y-4 border-t border-slate-900 pt-6 mt-2">
+                            <View className="gap-y-4 border-t border-slate-200 dark:border-slate-900 pt-6 mt-2">
                                 <View>
-                                    <Text className="text-white font-extrabold text-base">Reviews & Ratings</Text>
+                                    <Text className="text-slate-900 dark:text-white font-extrabold text-base">Reviews & Ratings</Text>
                                     <View className="flex-row items-center mt-1">
                                         <Ionicons name="star" size={14} color="#f59e0b" />
-                                        <Text className="text-white text-xs font-bold ml-1">
+                                        <Text className="text-slate-950 dark:text-white text-xs font-bold ml-1">
                                             {profile.averageRating > 0 ? profile.averageRating.toFixed(1) : "New"}
                                         </Text>
-                                        <Text className="text-slate-400 text-[10px] font-semibold ml-1.5">
+                                        <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold ml-1.5">
                                             ({reviews.length} reviews received)
                                         </Text>
                                     </View>
@@ -634,9 +637,9 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                 {isReviewsLoading ? (
                                     <ActivityIndicator size="small" color="#6366f1" className="py-4" />
                                 ) : reviews.length === 0 ? (
-                                    <View className="bg-slate-900 border border-slate-800 rounded-xl p-4 items-center justify-center">
+                                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 items-center justify-center">
                                         <Ionicons name="chatbox-outline" size={24} color="#64748b" />
-                                        <Text className="text-slate-400 text-xs mt-2 font-medium text-center">
+                                        <Text className="text-slate-500 dark:text-slate-400 text-xs mt-2 font-medium text-center">
                                             No reviews received yet.
                                         </Text>
                                     </View>
@@ -649,27 +652,27 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                             return (
                                                 <View
                                                     key={rev._id}
-                                                    className="bg-slate-900 border border-slate-800 rounded-xl p-4 gap-y-2 shadow-sm"
+                                                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 gap-y-2 shadow-sm"
                                                 >
                                                     <View className="flex-row justify-between items-start">
                                                         <View className="flex-row items-center">
-                                                            <View className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center border border-slate-700">
-                                                                <Text className="text-white font-bold text-xs uppercase">
+                                                            <View className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center border border-slate-200 dark:border-slate-700">
+                                                                <Text className="text-slate-800 dark:text-white font-bold text-xs uppercase">
                                                                     {getInitials(custName)}
                                                                 </Text>
                                                             </View>
                                                             <View className="ml-3">
-                                                                <Text className="text-white font-bold text-sm">
+                                                                <Text className="text-slate-900 dark:text-white font-bold text-sm">
                                                                     {custName}
                                                                 </Text>
-                                                                <Text className="text-slate-400 text-[10px] font-semibold mt-0.5">
+                                                                <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold mt-0.5">
                                                                     {new Date(rev.createdAt).toLocaleDateString()}
                                                                 </Text>
                                                             </View>
                                                         </View>
 
-                                                        <View className="flex-row items-center bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
-                                                            <Text className="text-amber-400 text-xs font-bold mr-1">
+                                                        <View className="flex-row items-center bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                                                            <Text className="text-amber-600 dark:text-amber-400 text-xs font-bold mr-1">
                                                                 {rev.rating}
                                                             </Text>
                                                             <Ionicons name="star" size={12} color="#f59e0b" />
@@ -677,7 +680,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                                     </View>
 
                                                     {rev.reviewText ? (
-                                                        <Text className="text-slate-300 text-xs mt-1 leading-relaxed">
+                                                        <Text className="text-slate-700 dark:text-slate-300 text-xs mt-1 leading-relaxed">
                                                             {rev.reviewText}
                                                         </Text>
                                                     ) : null}
@@ -691,26 +694,26 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                     )}
 
                     {/* Settings / App Actions Section */}
-                    <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider pl-1 mt-6">
+                    <Text className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider pl-1 mt-6">
                         Account Settings
                     </Text>
 
                     <View className="gap-y-3">
                         <TouchableOpacity
                             onPress={() => router.push("/edit-profile")}
-                            className="flex-row items-center justify-between bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl shadow-sm"
+                            className="flex-row items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl shadow-sm"
                         >
                             <View className="flex-row items-center">
                                 <Ionicons name="create-outline" size={20} color="#6366f1" />
-                                <Text className="text-slate-200 font-semibold text-sm ml-3">Edit Basic Profile</Text>
+                                <Text className="text-slate-800 dark:text-slate-200 font-semibold text-sm ml-3">Edit Basic Profile</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={16} color="#64748b" />
                         </TouchableOpacity>
 
-                        <TouchableOpacity className="flex-row items-center justify-between bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl shadow-sm">
+                        <TouchableOpacity className="flex-row items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl shadow-sm">
                             <View className="flex-row items-center">
                                 <Ionicons name="help-circle-outline" size={20} color="#6366f1" />
-                                <Text className="text-slate-200 font-semibold text-sm ml-3">Help & Support</Text>
+                                <Text className="text-slate-800 dark:text-slate-200 font-semibold text-sm ml-3">Help & Support</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={16} color="#64748b" />
                         </TouchableOpacity>
@@ -722,7 +725,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         >
                             <View className="flex-row items-center">
                                 <Ionicons name="log-out-outline" size={20} color="#f43f5e" />
-                                <Text className="text-rose-400 font-bold text-sm ml-3">Sign Out</Text>
+                                <Text className="text-rose-400 dark:text-rose-400 font-bold text-sm ml-3">Sign Out</Text>
                             </View>
                             <Ionicons name="chevron-forward" size={16} color="#f43f5e" />
                         </TouchableOpacity>
@@ -741,32 +744,32 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 visible={infoModalVisible}
                 onRequestClose={() => setInfoModalVisible(false)}
             >
-                <View className="flex-1 bg-black/80 justify-center items-center px-6">
-                    <View className="bg-slate-900 border border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
+                <View className="flex-1 bg-black/60 justify-center items-center px-6">
+                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white font-extrabold text-lg">Professional Info</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Professional Info</Text>
                             <TouchableOpacity onPress={() => setInfoModalVisible(false)} className="p-1">
-                                <Ionicons name="close" size={24} color="#94a3b8" />
+                                <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
                             </TouchableOpacity>
                         </View>
 
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Profession Description</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">Profession Description</Text>
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. Electrician, Plumbing Expert"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={editProfession}
                                 onChangeText={setEditProfession}
                             />
                         </View>
 
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Experience (Years)</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">Experience (Years)</Text>
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. 5"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 keyboardType="numeric"
                                 value={editExperience}
                                 onChangeText={setEditExperience}
@@ -774,11 +777,11 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         </View>
 
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">WhatsApp Number</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">WhatsApp Number</Text>
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. +91 9876543210"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 keyboardType="phone-pad"
                                 value={editWhatsapp}
                                 onChangeText={setEditWhatsapp}
@@ -788,13 +791,13 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         <View className="flex-row gap-x-4 mt-2">
                             <TouchableOpacity
                                 onPress={() => setInfoModalVisible(false)}
-                                className="flex-1 bg-slate-800 py-3 rounded-xl items-center"
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center active:opacity-90"
                             >
-                                <Text className="text-slate-300 font-bold">Cancel</Text>
+                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleSaveInfo}
-                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center"
+                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center active:opacity-90"
                             >
                                 <Text className="text-white font-bold">Save Changes</Text>
                             </TouchableOpacity>
@@ -810,21 +813,21 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 visible={aboutModalVisible}
                 onRequestClose={() => setAboutModalVisible(false)}
             >
-                <View className="flex-1 bg-black/80 justify-center items-center px-6">
-                    <View className="bg-slate-900 border border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
+                <View className="flex-1 bg-black/60 justify-center items-center px-6">
+                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white font-extrabold text-lg">About Me Bio</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">About Me Bio</Text>
                             <TouchableOpacity onPress={() => setAboutModalVisible(false)} className="p-1">
-                                <Ionicons name="close" size={24} color="#94a3b8" />
+                                <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
                             </TouchableOpacity>
                         </View>
 
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Description</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">Description</Text>
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm min-h-[120]"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-sm min-h-[120]"
                                 placeholder="Describe your services and specializations..."
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 multiline
                                 textAlignVertical="top"
                                 value={editAboutText}
@@ -835,13 +838,13 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         <View className="flex-row gap-x-4 mt-2">
                             <TouchableOpacity
                                 onPress={() => setAboutModalVisible(false)}
-                                className="flex-1 bg-slate-800 py-3 rounded-xl items-center"
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center active:opacity-90"
                             >
-                                <Text className="text-slate-300 font-bold">Cancel</Text>
+                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleSaveAbout}
-                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center"
+                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center active:opacity-90"
                             >
                                 <Text className="text-white font-bold">Save Bio</Text>
                             </TouchableOpacity>
@@ -857,20 +860,20 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 visible={skillsModalVisible}
                 onRequestClose={() => setSkillsModalVisible(false)}
             >
-                <View className="flex-1 bg-black/80 justify-center items-center px-6">
-                    <View className="bg-slate-900 border border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
+                <View className="flex-1 bg-black/60 justify-center items-center px-6">
+                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white font-extrabold text-lg">Specialist Skills</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Specialist Skills</Text>
                             <TouchableOpacity onPress={() => setSkillsModalVisible(false)} className="p-1">
-                                <Ionicons name="close" size={24} color="#94a3b8" />
+                                <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
                             </TouchableOpacity>
                         </View>
 
                         <View className="flex-row space-x-2 items-center">
                             <TextInput
-                                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm"
+                                className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white text-sm"
                                 placeholder="Type a skill (e.g. Wiring)..."
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={newSkillInput}
                                 onChangeText={setNewSkillInput}
                                 onSubmitEditing={handleAddSkill}
@@ -883,7 +886,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             </TouchableOpacity>
                         </View>
 
-                        <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Current Skills List</Text>
+                        <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Current Skills List</Text>
                         <ScrollView className="max-h-[160]">
                             <View className="flex-row flex-wrap gap-2 py-1">
                                 {editSkillsList.length === 0 ? (
@@ -894,7 +897,7 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                             key={idx}
                                             className="bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl flex-row items-center"
                                         >
-                                            <Text className="text-indigo-300 text-xs font-bold mr-1.5">{skill}</Text>
+                                            <Text className="text-indigo-600 dark:text-indigo-300 text-xs font-bold mr-1.5">{skill}</Text>
                                             <TouchableOpacity onPress={() => handleRemoveSkill(skill)}>
                                                 <Ionicons name="close-circle" size={14} color="#f43f5e" />
                                             </TouchableOpacity>
@@ -907,13 +910,13 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         <View className="flex-row gap-x-4 mt-2">
                             <TouchableOpacity
                                 onPress={() => setSkillsModalVisible(false)}
-                                className="flex-1 bg-slate-800 py-3 rounded-xl items-center"
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center active:opacity-90"
                             >
-                                <Text className="text-slate-300 font-bold">Cancel</Text>
+                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleSaveSkills}
-                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center"
+                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center active:opacity-90"
                             >
                                 <Text className="text-white font-bold">Save Skills</Text>
                             </TouchableOpacity>
@@ -929,12 +932,12 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 visible={categoriesModalVisible}
                 onRequestClose={() => setCategoriesModalVisible(false)}
             >
-                <View className="flex-1 bg-black/80 justify-center items-center px-6">
-                    <View className="bg-slate-900 border border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl max-h-[85%]">
+                <View className="flex-1 bg-black/60 justify-center items-center px-6">
+                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl max-h-[85%]">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white font-extrabold text-lg">Service Categories</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Service Categories</Text>
                             <TouchableOpacity onPress={() => setCategoriesModalVisible(false)} className="p-1">
-                                <Ionicons name="close" size={24} color="#94a3b8" />
+                                <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
                             </TouchableOpacity>
                         </View>
 
@@ -948,14 +951,14 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                                         onPress={() => handleToggleCategory(cat._id)}
                                         className={`flex-row items-center justify-between p-3.5 rounded-xl border mb-2 active:opacity-85 ${editSelectedCategories.includes(cat._id)
                                                 ? "bg-indigo-500/10 border-indigo-500"
-                                                : "bg-slate-950 border-slate-800"
+                                                : "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
                                             }`}
                                     >
-                                        <Text className="text-white text-sm font-semibold">{cat.name}</Text>
+                                        <Text className="text-slate-900 dark:text-white text-sm font-semibold">{cat.name}</Text>
                                         <Ionicons
                                             name={editSelectedCategories.includes(cat._id) ? "checkbox" : "square-outline"}
                                             size={20}
-                                            color={editSelectedCategories.includes(cat._id) ? "#6366f1" : "#64748b"}
+                                            color={editSelectedCategories.includes(cat._id) ? "#6366f1" : (isDark ? "#64748b" : "#94a3b8")}
                                         />
                                     </TouchableOpacity>
                                 ))}
@@ -965,13 +968,13 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         <View className="flex-row gap-x-4 mt-2">
                             <TouchableOpacity
                                 onPress={() => setCategoriesModalVisible(false)}
-                                className="flex-1 bg-slate-800 py-3 rounded-xl items-center"
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center active:opacity-90"
                             >
-                                <Text className="text-slate-300 font-bold">Cancel</Text>
+                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleSaveCategories}
-                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center"
+                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center active:opacity-90"
                             >
                                 <Text className="text-white font-bold">Save Categories</Text>
                             </TouchableOpacity>
@@ -987,43 +990,43 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 visible={areasModalVisible}
                 onRequestClose={() => setAreasModalVisible(false)}
             >
-                <View className="flex-1 bg-black/80 justify-center items-center px-6">
-                    <View className="bg-slate-900 border border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
+                <View className="flex-1 bg-black/60 justify-center items-center px-6">
+                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white font-extrabold text-lg">Service Areas</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Service Areas</Text>
                             <TouchableOpacity onPress={() => setAreasModalVisible(false)} className="p-1">
-                                <Ionicons name="close" size={24} color="#94a3b8" />
+                                <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
                             </TouchableOpacity>
                         </View>
 
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Area Name</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">Area Name</Text>
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. Model Town"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={editArea}
                                 onChangeText={setEditArea}
                             />
                         </View>
 
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">City</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">City</Text>
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. Ambala"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={editCity}
                                 onChangeText={setEditCity}
                             />
                         </View>
 
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">State</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest">State</Text>
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. Haryana"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={editState}
                                 onChangeText={setEditState}
                             />
@@ -1032,13 +1035,13 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         <View className="flex-row gap-x-4 mt-2">
                             <TouchableOpacity
                                 onPress={() => setAreasModalVisible(false)}
-                                className="flex-1 bg-slate-800 py-3 rounded-xl items-center"
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center active:opacity-90"
                             >
-                                <Text className="text-slate-300 font-bold">Cancel</Text>
+                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleSaveAreas}
-                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center"
+                                className="flex-1 bg-indigo-600 py-3 rounded-xl items-center active:opacity-90"
                             >
                                 <Text className="text-white font-bold">Save Areas</Text>
                             </TouchableOpacity>
@@ -1054,12 +1057,12 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 visible={locationModalVisible}
                 onRequestClose={() => setLocationModalVisible(false)}
             >
-                <View className="flex-1 bg-black/85 justify-center items-center px-6">
-                    <View className="bg-slate-900 border border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
+                <View className="flex-1 bg-black/60 justify-center items-center px-6">
+                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white font-extrabold text-lg">Change Location Address</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Change Location Address</Text>
                             <TouchableOpacity onPress={() => setLocationModalVisible(false)} className="p-1">
-                                <Ionicons name="close" size={24} color="#94a3b8" />
+                                <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
                             </TouchableOpacity>
                         </View>
 
@@ -1080,22 +1083,22 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         </TouchableOpacity>
 
                         <View className="flex-row items-center my-1">
-                            <View className="flex-grow h-[1] bg-slate-800" />
+                            <View className="flex-grow h-[1] bg-slate-200 dark:bg-slate-800" />
                             <Text className="text-slate-500 text-[10px] uppercase font-bold px-3">or search manually</Text>
-                            <View className="flex-grow h-[1] bg-slate-800" />
+                            <View className="flex-grow h-[1] bg-slate-200 dark:bg-slate-800" />
                         </View>
 
                         {/* Text Search Field */}
                         <View className="relative">
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-white text-sm"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 text-slate-900 dark:text-white text-sm"
                                 placeholder="Search town, city or region..."
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={locSearchQuery}
                                 onChangeText={handleSearchLocation}
                             />
                             <View className="absolute left-3 top-3.5">
-                                <Ionicons name="search-outline" size={16} color="#64748b" />
+                                <Ionicons name="search-outline" size={16} color={isDark ? "#64748b" : "#94a3b8"} />
                             </View>
                         </View>
 
@@ -1104,16 +1107,16 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                             <ActivityIndicator size="small" color="#6366f1" className="py-2" />
                         ) : (
                             locSuggestions.length > 0 && (
-                                <View className="bg-slate-950 border border-slate-800 rounded-xl mt-1 max-h-[160] overflow-hidden shadow-inner">
+                                <View className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl mt-1 max-h-[160] overflow-hidden shadow-inner">
                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                         {locSuggestions.map((item) => (
                                             <TouchableOpacity
                                                 key={item.id}
                                                 onPress={() => handleSaveLocation(item)}
-                                                className="px-4 py-3 border-b border-slate-900 active:bg-slate-900 flex-row items-center"
+                                                className="px-4 py-3 border-b border-slate-200 dark:border-slate-900 active:bg-slate-200 dark:active:bg-slate-900 flex-row items-center"
                                             >
                                                 <Ionicons name="location-outline" size={14} color="#6366f1" style={{ marginRight: 8 }} />
-                                                <Text className="text-white text-xs leading-relaxed flex-grow" numberOfLines={2}>
+                                                <Text className="text-slate-900 dark:text-white text-xs leading-relaxed flex-grow" numberOfLines={2}>
                                                     {item.address}
                                                 </Text>
                                             </TouchableOpacity>
@@ -1126,9 +1129,9 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                         <View className="flex-row gap-x-4 mt-2">
                             <TouchableOpacity
                                 onPress={() => setLocationModalVisible(false)}
-                                className="flex-1 bg-slate-800 py-3 rounded-xl items-center"
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center active:opacity-90"
                             >
-                                <Text className="text-slate-300 font-bold">Cancel</Text>
+                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1142,6 +1145,9 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
 // CUSTOMER PROFILE VIEW
 // ----------------------------------------------------
 function CustomerProfileTab({ user, logout, router }) {
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
+
     const getInitials = (name) => {
         if (!name) return "U";
         return name
@@ -1153,25 +1159,25 @@ function CustomerProfileTab({ user, logout, router }) {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950" edges={["bottom"]}>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={["bottom"]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Profile Header Card */}
-                <View className="items-center py-8 bg-slate-900 border-b border-slate-800">
-                    <View className="w-24 h-24 bg-indigo-600 rounded-full items-center justify-center border-4 border-slate-800 shadow-xl shadow-indigo-500/20 mb-4">
+                <View className="items-center py-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                    <View className="w-24 h-24 bg-indigo-600 rounded-full items-center justify-center border-4 border-slate-100 dark:border-slate-800 shadow-xl shadow-indigo-500/20 mb-4">
                         <Text className="text-white text-3xl font-black">
                             {getInitials(user?.fullName)}
                         </Text>
                     </View>
-                    <Text className="text-2xl font-extrabold text-white">
+                    <Text className="text-2xl font-extrabold text-slate-900 dark:text-white">
                         {user?.fullName || "User Name"}
                     </Text>
-                    <Text className="text-slate-400 text-sm mt-1">{user?.email}</Text>
+                    <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1">{user?.email}</Text>
 
                     {/* Role Badge */}
                     <View className="mt-3 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full flex-row items-center space-x-1.5">
-                        <Ionicons name="shield-checkmark" size={14} color="#818cf8" />
-                        <Text className="text-indigo-400 text-xs font-bold uppercase tracking-wider ml-1">
+                        <Ionicons name="shield-checkmark" size={14} color="#6366f1" />
+                        <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider ml-1">
                             {user?.role || "Customer"}
                         </Text>
                     </View>
@@ -1179,27 +1185,27 @@ function CustomerProfileTab({ user, logout, router }) {
 
                 {/* Account Details list */}
                 <View className="px-5 mt-6 gap-y-4">
-                    <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider pl-1">
+                    <Text className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider pl-1">
                         Account Details
                     </Text>
 
-                    <View className="bg-slate-900 rounded-2xl border border-slate-800 p-4 gap-y-4 shadow-sm">
-                        <View className="flex-row items-center justify-between pb-3 border-b border-slate-800/80">
+                    <View className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 gap-y-4 shadow-sm">
+                        <View className="flex-row items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800/80">
                             <View className="flex-row items-center">
                                 <Ionicons name="call-outline" size={20} color="#94a3b8" />
-                                <Text className="text-slate-300 font-semibold text-sm ml-3">Phone Number</Text>
+                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-3">Phone Number</Text>
                             </View>
-                            <Text className="text-white font-medium text-sm">
+                            <Text className="text-slate-900 dark:text-white font-medium text-sm">
                                 {user?.phoneNumber || "N/A"}
                             </Text>
                         </View>
 
-                        <View className="flex-row items-center justify-between pb-3 border-b border-slate-800/80">
+                        <View className="flex-row items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800/80">
                             <View className="flex-row items-center">
                                 <Ionicons name="calendar-outline" size={20} color="#94a3b8" />
-                                <Text className="text-slate-300 font-semibold text-sm ml-3">Joined On</Text>
+                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-3">Joined On</Text>
                             </View>
-                            <Text className="text-white font-medium text-sm">
+                            <Text className="text-slate-900 dark:text-white font-medium text-sm">
                                 {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
                             </Text>
                         </View>
@@ -1207,9 +1213,9 @@ function CustomerProfileTab({ user, logout, router }) {
                         <View className="flex-row items-center justify-between">
                             <View className="flex-row items-center">
                                 <Ionicons name="shield-outline" size={20} color="#94a3b8" />
-                                <Text className="text-slate-300 font-semibold text-sm ml-3">Status</Text>
+                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm ml-3">Status</Text>
                             </View>
-                            <Text className="text-emerald-400 font-bold text-sm">
+                            <Text className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                                 {user?.isActive ? "Active" : "Inactive"}
                             </Text>
                         </View>
@@ -1218,25 +1224,25 @@ function CustomerProfileTab({ user, logout, router }) {
 
                 {/* Settings list */}
                 <View className="px-5 mt-6 gap-y-3">
-                    <Text className="text-slate-400 font-bold text-xs uppercase tracking-wider pl-1">
+                    <Text className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider pl-1">
                         Settings
                     </Text>
 
                     <TouchableOpacity
                         onPress={() => router.push("/edit-profile")}
-                        className="flex-row items-center justify-between bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl shadow-sm"
+                        className="flex-row items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl shadow-sm"
                     >
                         <View className="flex-row items-center">
                             <Ionicons name="create-outline" size={20} color="#6366f1" />
-                            <Text className="text-slate-200 font-semibold text-sm ml-3">Edit Profile</Text>
+                            <Text className="text-slate-800 dark:text-slate-200 font-semibold text-sm ml-3">Edit Profile</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={16} color="#64748b" />
                     </TouchableOpacity>
 
-                    <TouchableOpacity className="flex-row items-center justify-between bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl shadow-sm">
+                    <TouchableOpacity className="flex-row items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl shadow-sm">
                         <View className="flex-row items-center">
                             <Ionicons name="help-circle-outline" size={20} color="#6366f1" />
-                            <Text className="text-slate-200 font-semibold text-sm ml-3">Help & Support</Text>
+                            <Text className="text-slate-800 dark:text-slate-200 font-semibold text-sm ml-3">Help & Support</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={16} color="#64748b" />
                     </TouchableOpacity>
@@ -1248,7 +1254,7 @@ function CustomerProfileTab({ user, logout, router }) {
                     >
                         <View className="flex-row items-center">
                             <Ionicons name="log-out-outline" size={20} color="#f43f5e" />
-                            <Text className="text-rose-400 font-bold text-sm ml-3">Sign Out</Text>
+                            <Text className="text-rose-400 dark:text-rose-400 font-bold text-sm ml-3">Sign Out</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={16} color="#f43f5e" />
                     </TouchableOpacity>

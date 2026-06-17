@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
+import { useColorScheme } from "nativewind";
 import api from "../../src/services/api";
 
 const { width } = Dimensions.get("window");
@@ -23,6 +24,8 @@ const ITEM_WIDTH = (width - 40 - 16) / 3;
 export default function GalleryScreen() {
     const router = useRouter();
     const isFocused = useIsFocused();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     const [gallery, setGallery] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +70,7 @@ export default function GalleryScreen() {
                 onPress={() => router.push(`/worker/GalleryDetailsScreen?galleryId=${item._id}`)}
                 activeOpacity={0.9}
                 style={{ width: ITEM_WIDTH, height: ITEM_WIDTH }}
-                className="bg-slate-900 rounded-xl overflow-hidden mr-2 mb-2 relative border border-slate-800"
+                className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden mr-2 mb-2 relative border border-slate-200 dark:border-slate-800 shadow-sm"
             >
                 <Image
                     source={{ uri: item.imageUrl }}
@@ -95,22 +98,22 @@ export default function GalleryScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950" edges={["top", "left", "right"]}>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={["top", "left", "right"]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
             {/* Header */}
-            <View className="px-5 py-4 border-b border-slate-900 bg-slate-950 flex-row items-center justify-between">
+            <View className="px-5 py-4 border-b border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950 flex-row items-center justify-between">
                 <View>
-                    <Text className="text-2xl font-extrabold text-white">My Work Gallery</Text>
-                    <Text className="text-slate-400 text-xs mt-0.5">Showcase your completed projects ({gallery.length}/20)</Text>
+                    <Text className="text-2xl font-extrabold text-slate-900 dark:text-white">My Work Gallery</Text>
+                    <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Showcase your completed projects ({gallery.length}/20)</Text>
                 </View>
 
                 {/* Add Work Button */}
                 <TouchableOpacity
                     onPress={() => router.push("/worker/AddWorkScreen")}
-                    className="bg-indigo-600 px-3.5 py-2 rounded-xl flex-row items-center space-x-1 active:opacity-90 shadow-lg shadow-indigo-600/20"
+                    className="bg-indigo-600 px-3 py-2 rounded-xl flex-row items-center gap-1.5 active:opacity-90 shadow-lg shadow-indigo-600/20"
                 >
-                    <Ionicons name="add" size={16} color="white" />
+                    <Ionicons name="add" size={18} color="white" />
                     <Text className="text-white font-bold text-xs">Add Work</Text>
                 </TouchableOpacity>
             </View>
@@ -121,11 +124,11 @@ export default function GalleryScreen() {
                 </View>
             ) : gallery.length === 0 ? (
                 <View className="flex-1 items-center justify-center px-6">
-                    <View className="w-20 h-20 bg-slate-900 border border-slate-800 rounded-full items-center justify-center mb-4">
+                    <View className="w-20 h-20 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full items-center justify-center mb-4 shadow-sm">
                         <Ionicons name="images-outline" size={36} color="#64748b" />
                     </View>
-                    <Text className="text-white text-base font-bold text-center">No projects in your gallery yet</Text>
-                    <Text className="text-slate-500 text-xs mt-1 text-center max-w-xs leading-relaxed">
+                    <Text className="text-slate-900 dark:text-white text-base font-bold text-center">No projects in your gallery yet</Text>
+                    <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1 text-center max-w-xs leading-relaxed">
                         Upload photos of your completed projects (e.g. clean wiring, repaired plumbing, renovated room) to show clients your work quality!
                     </Text>
                     <TouchableOpacity

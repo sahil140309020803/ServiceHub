@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 import api from "../src/services/api";
 import useAuthStore from "../src/store/useAuthStore";
 import useLocationStore from "../src/store/useLocationStore";
@@ -22,6 +23,8 @@ export default function SearchScreen() {
     const params = useLocalSearchParams();
     const { user } = useAuthStore();
     const { location } = useLocationStore();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     // Search and filter states
     const [searchQuery, setSearchQuery] = useState(params.query || "");
@@ -63,7 +66,7 @@ export default function SearchScreen() {
 
     // Helper to get category/query specific icon
     const getQueryIconName = (text) => {
-        const lower = text.toLowerCase();
+        const lower = (text || "").toLowerCase();
         if (lower.includes("elect")) return "flash-outline";
         if (lower.includes("plumb")) return "water-outline";
         if (lower.includes("paint")) return "brush-outline";
@@ -77,7 +80,7 @@ export default function SearchScreen() {
 
     // Helper to get color for icons
     const getQueryIconColor = (text) => {
-        const lower = text.toLowerCase();
+        const lower = (text || "").toLowerCase();
         if (lower.includes("elect")) return "#fbbf24";
         if (lower.includes("plumb")) return "#38bdf8";
         if (lower.includes("paint")) return "#f87171";
@@ -298,14 +301,14 @@ export default function SearchScreen() {
         return (
             <TouchableOpacity
                 onPress={() => router.push(`/worker-profile?workerId=${item._id}`)}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 flex-row active:opacity-95"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-4 flex-row active:opacity-95 shadow-sm"
             >
                 {/* Profile Avatar */}
                 <View className="mr-4">
                     {profileImage ? (
                         <Image
                             source={{ uri: profileImage }}
-                            className="w-16 h-16 rounded-xl bg-slate-800"
+                            className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-slate-800"
                         />
                     ) : (
                         <View className="w-16 h-16 rounded-xl bg-indigo-600 items-center justify-center">
@@ -316,7 +319,7 @@ export default function SearchScreen() {
                     )}
 
                     {item.isVerified && (
-                        <View className="absolute bottom-[-4] right-[-4] bg-indigo-500 rounded-full p-0.5 border-2 border-slate-900">
+                        <View className="absolute bottom-[-4] right-[-4] bg-indigo-500 rounded-full p-0.5 border-2 border-white dark:border-slate-900">
                             <Ionicons name="checkmark-circle" size={14} color="white" />
                         </View>
                     )}
@@ -326,7 +329,7 @@ export default function SearchScreen() {
                 <View className="flex-1 justify-between">
                     <View>
                         <View className="flex-row items-center justify-between">
-                            <Text className="text-white font-extrabold text-base flex-1 mr-1" numberOfLines={1}>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base flex-1 mr-1" numberOfLines={1}>
                                 {fullName}
                             </Text>
 
@@ -336,7 +339,7 @@ export default function SearchScreen() {
                                 </Text>
                             </View>
                         </View>
-                        <Text className="text-slate-400 text-xs font-semibold mt-0.5">
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-semibold mt-0.5">
                             {item.profession}
                         </Text>
                     </View>
@@ -346,24 +349,24 @@ export default function SearchScreen() {
                         <View className="flex-row items-center space-x-3">
                             <View className="flex-row items-center">
                                 <Ionicons name="star" size={14} color="#f59e0b" />
-                                <Text className="text-white text-xs font-bold ml-1">
+                                <Text className="text-slate-900 dark:text-white text-xs font-bold ml-1">
                                     {item.averageRating > 0 ? item.averageRating.toFixed(1) : "New"}
                                 </Text>
-                                <Text className="text-slate-400 text-[10px] font-semibold ml-0.5">
+                                <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold ml-0.5">
                                     ({item.totalReviews})
                                 </Text>
                             </View>
 
-                            <Text className="text-slate-700 text-xs">|</Text>
+                            <Text className="text-slate-300 dark:text-slate-700 text-xs">|</Text>
 
-                            <Text className="text-slate-300 text-xs font-semibold">
+                            <Text className="text-slate-600 dark:text-slate-300 text-xs font-semibold">
                                 {item.experienceYears} Years Exp
                             </Text>
                         </View>
 
                         <View className="flex-row items-center">
                             <Ionicons name="location-outline" size={12} color="#6366f1" />
-                            <Text className="text-slate-400 text-xs font-semibold ml-1">
+                            <Text className="text-slate-500 dark:text-slate-400 text-xs font-semibold ml-1">
                                 {item.distance !== undefined && item.distance !== 999999
                                     ? `${item.distance.toFixed(1)} km away`
                                     : cityLoc}
@@ -399,11 +402,11 @@ export default function SearchScreen() {
     const showSuggestions = isFocused && searchQuery.trim() !== "";
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950">
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
             {/* Sticky Header: Back Button & Search Input Bar */}
-            <View className="px-5 pt-3 pb-2 border-b border-slate-900 bg-slate-950">
+            <View className="px-5 pt-3 pb-2 border-b border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950">
                 <View className="flex-row items-center">
                     <TouchableOpacity
                         onPress={() => {
@@ -411,16 +414,20 @@ export default function SearchScreen() {
                                 setIsFocused(false);
                                 searchInputRef.current?.blur();
                             } else {
-                                router.canGoBack() ? router.back() : router.replace("/(tabs)/Home");
+                                if (router.canGoBack()) {
+                                    router.back();
+                                } else {
+                                    router.replace("/(tabs)/Home");
+                                }
                             }
                         }}
-                        className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full items-center justify-center mr-3"
+                        className="w-10 h-10 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full items-center justify-center mr-3"
                     >
-                        <Ionicons name="arrow-back" size={20} color="white" />
+                        <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#0f172a"} />
                     </TouchableOpacity>
 
                     {/* Search Input Box with Mic */}
-                    <View className="flex-1 flex-row items-center bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
+                    <View className="flex-1 flex-row items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2">
                         <Ionicons name="search" size={18} color="#64748b" className="mr-2" />
                         <TextInput
                             ref={searchInputRef}
@@ -449,8 +456,8 @@ export default function SearchScreen() {
                                 setIsFocused(false);
                             }}
                             placeholder="Search services or professionals..."
-                            placeholderTextColor="#64748b"
-                            className="flex-1 text-white text-sm py-1"
+                            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                            className="flex-1 text-slate-800 dark:text-white text-sm py-1"
                             returnKeyType="search"
                         />
                         {searchQuery.length > 0 && (
@@ -468,16 +475,16 @@ export default function SearchScreen() {
                         onPress={() => setShowFilters(!showFilters)}
                         className={`w-10 h-10 border rounded-xl items-center justify-center ml-3 relative ${showFilters || isAnyFilterActive()
                             ? "bg-indigo-600/20 border-indigo-500"
-                            : "bg-slate-900 border-slate-800"
+                            : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                             }`}
                     >
                         <Ionicons
                             name="options-outline"
                             size={20}
-                            color={showFilters || isAnyFilterActive() ? "#818cf8" : "white"}
+                            color={showFilters || isAnyFilterActive() ? "#6366f1" : (isDark ? "white" : "#0f172a")}
                         />
                         {isAnyFilterActive() && (
-                            <View className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-slate-950" />
+                            <View className="absolute top-1 right-1 w-2.5 h-2.5 bg-indigo-500 rounded-full border border-white dark:border-slate-950" />
                         )}
                     </TouchableOpacity>
                 </View>
@@ -490,51 +497,51 @@ export default function SearchScreen() {
                         className="mt-3 py-1 flex-row"
                         contentContainerStyle={{ gap: 8 }}
                     >
-                        {selectedCategory && (
+                        {!!selectedCategory && (
                             <View className="flex-row items-center bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full">
-                                <Text className="text-indigo-400 text-xs font-bold mr-1">
+                                <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold mr-1">
                                     Cat: {categories.find(c => c._id === selectedCategory)?.name || "Selected"}
                                 </Text>
                                 <TouchableOpacity onPress={() => { setSelectedCategory(""); fetchWorkers(1); }}>
-                                    <Ionicons name="close-circle" size={14} color="#818cf8" />
+                                    <Ionicons name="close-circle" size={14} color="#6366f1" />
                                 </TouchableOpacity>
                             </View>
                         )}
                         {city !== "" && (
                             <View className="flex-row items-center bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full">
-                                <Text className="text-indigo-400 text-xs font-bold mr-1">
+                                <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold mr-1">
                                     City: {city}
                                 </Text>
                                 <TouchableOpacity onPress={() => { setCity(""); fetchWorkers(1); }}>
-                                    <Ionicons name="close-circle" size={14} color="#818cf8" />
+                                    <Ionicons name="close-circle" size={14} color="#6366f1" />
                                 </TouchableOpacity>
                             </View>
                         )}
                         {minRating > 0 && (
                             <View className="flex-row items-center bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full">
-                                <Text className="text-indigo-400 text-xs font-bold mr-1 flex-row items-center">
+                                <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold mr-1 flex-row items-center">
                                     Rating: {minRating}★+
                                 </Text>
                                 <TouchableOpacity onPress={() => { setMinRating(0); fetchWorkers(1); }}>
-                                    <Ionicons name="close-circle" size={14} color="#818cf8" />
+                                    <Ionicons name="close-circle" size={14} color="#6366f1" />
                                 </TouchableOpacity>
                             </View>
                         )}
                         {minExperience > 0 && (
                             <View className="flex-row items-center bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full">
-                                <Text className="text-indigo-400 text-xs font-bold mr-1">
+                                <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold mr-1">
                                     Exp: {minExperience}+ Yrs
                                 </Text>
                                 <TouchableOpacity onPress={() => { setMinExperience(0); fetchWorkers(1); }}>
-                                    <Ionicons name="close-circle" size={14} color="#818cf8" />
+                                    <Ionicons name="close-circle" size={14} color="#6366f1" />
                                 </TouchableOpacity>
                             </View>
                         )}
                         <TouchableOpacity
                             onPress={handleResetFilters}
-                            className="bg-slate-900 border border-slate-800 px-3 py-1 rounded-full justify-center"
+                            className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-full justify-center"
                         >
-                            <Text className="text-slate-400 text-xs font-bold">Clear All</Text>
+                            <Text className="text-slate-600 dark:text-slate-400 text-xs font-bold">Clear All</Text>
                         </TouchableOpacity>
                     </ScrollView>
                 )}
@@ -542,11 +549,11 @@ export default function SearchScreen() {
 
             {/* Filter Expandable Panel */}
             {showFilters && (
-                <View className="bg-slate-900 border-b border-slate-800 p-5">
-                    <Text className="text-white font-extrabold text-base mb-3">Filters</Text>
+                <View className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-5">
+                    <Text className="text-slate-900 dark:text-white font-extrabold text-base mb-3">Filters</Text>
                     <ScrollView showsVerticalScrollIndicator={false} className="max-h-[320px]">
                         {/* Service Category */}
-                        <Text className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Category</Text>
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Category</Text>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -557,10 +564,10 @@ export default function SearchScreen() {
                                 onPress={() => setSelectedCategory("")}
                                 className={`px-4 py-2 rounded-xl border ${selectedCategory === ""
                                     ? "bg-indigo-600 border-indigo-500"
-                                    : "bg-slate-950 border-slate-800"
+                                    : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                                     }`}
                             >
-                                <Text className={`text-xs font-bold ${selectedCategory === "" ? "text-white" : "text-slate-400"}`}>
+                                <Text className={`text-xs font-bold ${selectedCategory === "" ? "text-white" : "text-slate-600 dark:text-slate-400"}`}>
                                     All
                                 </Text>
                             </TouchableOpacity>
@@ -570,10 +577,10 @@ export default function SearchScreen() {
                                     onPress={() => setSelectedCategory(cat._id)}
                                     className={`px-4 py-2 rounded-xl border ${selectedCategory === cat._id
                                         ? "bg-indigo-600 border-indigo-500"
-                                        : "bg-slate-950 border-slate-800"
+                                        : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                                         }`}
                                 >
-                                    <Text className={`text-xs font-bold ${selectedCategory === cat._id ? "text-white" : "text-slate-400"}`}>
+                                    <Text className={`text-xs font-bold ${selectedCategory === cat._id ? "text-white" : "text-slate-600 dark:text-slate-400"}`}>
                                         {cat.name}
                                     </Text>
                                 </TouchableOpacity>
@@ -581,19 +588,19 @@ export default function SearchScreen() {
                         </ScrollView>
 
                         {/* City Filter */}
-                        <Text className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">City</Text>
-                        <View className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 mb-4">
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">City</Text>
+                        <View className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 mb-4">
                             <TextInput
                                 value={city}
                                 onChangeText={setCity}
                                 placeholder="Enter city name (e.g. New York)"
-                                placeholderTextColor="#64748b"
-                                className="text-white text-sm"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                className="text-slate-800 dark:text-white text-sm"
                             />
                         </View>
 
                         {/* Minimum Rating stars */}
-                        <Text className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Minimum Rating</Text>
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Minimum Rating</Text>
                         <View className="flex-row gap-x-2 mb-4">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <TouchableOpacity
@@ -601,10 +608,10 @@ export default function SearchScreen() {
                                     onPress={() => setMinRating(star)}
                                     className={`flex-row items-center px-3 py-2 rounded-xl border ${minRating === star
                                         ? "bg-indigo-600 border-indigo-500"
-                                        : "bg-slate-950 border-slate-800"
+                                        : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                                         }`}
                                 >
-                                    <Text className={`text-xs font-extrabold mr-1 ${minRating === star ? "text-white" : "text-slate-400"}`}>
+                                    <Text className={`text-xs font-extrabold mr-1 ${minRating === star ? "text-white" : "text-slate-600 dark:text-slate-400"}`}>
                                         {star}
                                     </Text>
                                     <Ionicons name="star" size={12} color={minRating === star ? "white" : "#64748b"} />
@@ -613,15 +620,15 @@ export default function SearchScreen() {
                             {minRating > 0 && (
                                 <TouchableOpacity
                                     onPress={() => setMinRating(0)}
-                                    className="px-3 py-2 rounded-xl border border-slate-800 bg-slate-950 justify-center"
+                                    className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 justify-center"
                                 >
-                                    <Text className="text-slate-400 text-xs">Clear</Text>
+                                    <Text className="text-slate-500 dark:text-slate-400 text-xs">Clear</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
 
                         {/* Experience Years */}
-                        <Text className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Minimum Experience</Text>
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-2 uppercase tracking-wide">Minimum Experience</Text>
                         <View className="flex-row gap-x-2 mb-2">
                             {[0, 1, 3, 5, 8].map((exp) => (
                                 <TouchableOpacity
@@ -629,10 +636,10 @@ export default function SearchScreen() {
                                     onPress={() => setMinExperience(exp)}
                                     className={`px-3 py-2 rounded-xl border ${minExperience === exp
                                         ? "bg-indigo-600 border-indigo-500"
-                                        : "bg-slate-950 border-slate-800"
+                                        : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                                         }`}
                                 >
-                                    <Text className={`text-xs font-bold ${minExperience === exp ? "text-white" : "text-slate-400"}`}>
+                                    <Text className={`text-xs font-bold ${minExperience === exp ? "text-white" : "text-slate-600 dark:text-slate-400"}`}>
                                         {exp === 0 ? "Any" : `${exp}+ Yrs`}
                                     </Text>
                                 </TouchableOpacity>
@@ -641,12 +648,12 @@ export default function SearchScreen() {
                     </ScrollView>
 
                     {/* Filter actions */}
-                    <View className="flex-row gap-x-4 border-t border-slate-800/80 pt-4 mt-2">
+                    <View className="flex-row gap-x-4 border-t border-slate-200 dark:border-slate-800/80 pt-4 mt-2">
                         <TouchableOpacity
                             onPress={handleResetFilters}
-                            className="flex-1 bg-slate-950 border border-slate-800 py-3 rounded-xl items-center"
+                            className="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 py-3 rounded-xl items-center"
                         >
-                            <Text className="text-slate-400 font-bold">Reset</Text>
+                            <Text className="text-slate-600 dark:text-slate-400 font-bold">Reset</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={handleApplyFilters}
@@ -657,10 +664,7 @@ export default function SearchScreen() {
                     </View>
                 </View>
             )}
-
-            {/* Content Display Switch */}
             {searchQuery.trim() === "" ? (
-                /* SCREEN 1: Empty Search Dashboard layout */
                 <ScrollView
                     className="flex-1 px-5"
                     keyboardShouldPersistTaps="handled"
@@ -670,24 +674,24 @@ export default function SearchScreen() {
                     {user && recentSearches.length > 0 && (
                         <View className="mt-5">
                             <View className="flex-row justify-between items-center mb-3">
-                                <Text className="text-white font-extrabold text-base">Recent Searches</Text>
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-base">Recent Searches</Text>
                                 <TouchableOpacity onPress={handleClearHistory} className="py-1 px-2">
-                                    <Text className="text-indigo-400 text-xs font-bold">Clear All</Text>
+                                    <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold">Clear All</Text>
                                 </TouchableOpacity>
                             </View>
                             <View className="flex-row flex-wrap gap-2">
                                 {recentSearches.map((item) => (
-                                    <View key={item._id} className="flex-row items-center bg-slate-900 border border-slate-800 px-3.5 py-2 rounded-full">
+                                    <View key={item._id} className="flex-row items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3.5 py-2 rounded-full">
                                         <TouchableOpacity
                                             onPress={() => handleRecentSearchClick(item.searchText)}
                                             className="flex-row items-center"
                                         >
                                             <Ionicons name={getQueryIconName(item.searchText)} size={14} color={getQueryIconColor(item.searchText)} className="mr-1.5" />
-                                            <Text className="text-slate-200 text-xs font-semibold">{item.searchText}</Text>
+                                            <Text className="text-slate-700 dark:text-slate-200 text-xs font-semibold">{item.searchText}</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
                                             onPress={() => handleDeleteHistoryItem(item._id)}
-                                            className="ml-2 pl-2 border-l border-slate-800"
+                                            className="ml-2 pl-2 border-l border-slate-200 dark:border-slate-800"
                                         >
                                             <Ionicons name="close" size={14} color="#64748b" />
                                         </TouchableOpacity>
@@ -699,18 +703,18 @@ export default function SearchScreen() {
 
                     {/* Popular Searches */}
                     <View className="mt-6">
-                        <Text className="text-white font-extrabold text-base mb-3.5">Popular Searches 🔥</Text>
+                        <Text className="text-slate-900 dark:text-white font-extrabold text-base mb-3.5">Popular Searches 🔥</Text>
                         <View className="flex-row flex-wrap justify-between gap-y-3">
                             {popularSearches.map((item, idx) => (
                                 <TouchableOpacity
                                     key={idx}
                                     onPress={() => handleRecentSearchClick(item.name)}
-                                    className="w-[48.5%] bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex-row items-center active:bg-slate-800"
+                                    className="w-[48.5%] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl flex-row items-center active:bg-slate-100 dark:active:bg-slate-800"
                                 >
-                                    <View className="w-8 h-8 rounded-full bg-slate-950 border border-slate-850 items-center justify-center mr-2.5">
+                                    <View className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 items-center justify-center mr-2.5">
                                         <Ionicons name={item.icon} size={16} color={item.color} />
                                     </View>
-                                    <Text className="text-slate-200 text-xs font-bold">{item.name}</Text>
+                                    <Text className="text-slate-800 dark:text-slate-200 text-xs font-bold">{item.name}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -719,9 +723,9 @@ export default function SearchScreen() {
                     {/* Browse Categories */}
                     <View className="mt-6 mb-8">
                         <View className="flex-row justify-between items-center mb-3">
-                            <Text className="text-white font-extrabold text-base">Browse Categories</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base">Browse Categories</Text>
                             <TouchableOpacity onPress={() => setSelectedCategory("")}>
-                                <Text className="text-indigo-400 text-xs font-bold">View All</Text>
+                                <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold">View All</Text>
                             </TouchableOpacity>
                         </View>
                         <ScrollView
@@ -736,50 +740,50 @@ export default function SearchScreen() {
                                     onPress={() => router.push(`/category-workers?categoryId=${cat._id}&categoryName=${cat.name}`)}
                                     className="items-center"
                                 >
-                                    <View className="w-14 h-14 rounded-full bg-slate-900 border border-slate-800 items-center justify-center mb-1.5">
+                                    <View className="w-14 h-14 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 items-center justify-center mb-1.5">
                                         <Ionicons name={getQueryIconName(cat.name)} size={22} color={getQueryIconColor(cat.name)} />
                                     </View>
-                                    <Text className="text-slate-300 text-[10px] font-semibold">{cat.name}</Text>
+                                    <Text className="text-slate-700 dark:text-slate-300 text-[10px] font-semibold">{cat.name}</Text>
                                 </TouchableOpacity>
                             ))}
                             <TouchableOpacity
                                 onPress={handleResetFilters}
                                 className="items-center"
                             >
-                                <View className="w-14 h-14 rounded-full bg-slate-900 border border-slate-800 items-center justify-center mb-1.5">
+                                <View className="w-14 h-14 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 items-center justify-center mb-1.5">
                                     <Ionicons name="grid-outline" size={22} color="#94a3b8" />
                                 </View>
-                                <Text className="text-slate-400 text-[10px] font-semibold">More</Text>
+                                <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold">More</Text>
                             </TouchableOpacity>
                         </ScrollView>
                     </View>
                 </ScrollView>
             ) : showSuggestions ? (
-                /* SCREEN 3: Active Typing Search Suggestions layout */
                 <ScrollView
                     className="flex-1 px-5"
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
+                    {/* SCREEN 3: Active Typing Search Suggestions layout */}
                     {/* Services section */}
                     {matchedServices.length > 0 && (
                         <View className="mt-5">
                             <View className="flex-row justify-between items-center mb-3">
-                                <Text className="text-white font-extrabold text-base">Services</Text>
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-base">Services</Text>
                                 <TouchableOpacity onPress={handleSearch} className="py-1 px-2">
-                                    <Text className="text-indigo-400 text-xs font-bold">View all</Text>
+                                    <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold">View all</Text>
                                 </TouchableOpacity>
                             </View>
-                            <View className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                            <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
                                 {matchedServices.map((item, idx) => (
                                     <TouchableOpacity
                                         key={idx}
                                         onPress={() => handleRecentSearchClick(item.name)}
-                                        className="flex-row items-center justify-between px-4 py-3.5 border-b border-slate-800/60 last:border-0"
+                                        className="flex-row items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-slate-800/60 last:border-0"
                                     >
                                         <View className="flex-row items-center">
                                             <Ionicons name={getQueryIconName(item.name)} size={16} color={getQueryIconColor(item.name)} className="mr-3" />
-                                            <Text className="text-slate-200 text-sm font-semibold">{item.name}</Text>
+                                            <Text className="text-slate-700 dark:text-slate-200 text-sm font-semibold">{item.name}</Text>
                                         </View>
                                         <Ionicons name="chevron-forward" size={16} color="#64748b" />
                                     </TouchableOpacity>
@@ -792,9 +796,9 @@ export default function SearchScreen() {
                     {workers.length > 0 && (
                         <View className="mt-6 mb-8">
                             <View className="flex-row justify-between items-center mb-3">
-                                <Text className="text-white font-extrabold text-base">Professionals</Text>
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-base">Professionals</Text>
                                 <TouchableOpacity onPress={handleSearch} className="py-1 px-2">
-                                    <Text className="text-indigo-400 text-xs font-bold">View all</Text>
+                                    <Text className="text-indigo-600 dark:text-indigo-400 text-xs font-bold">View all</Text>
                                 </TouchableOpacity>
                             </View>
                             <View className="gap-y-3">
@@ -809,13 +813,13 @@ export default function SearchScreen() {
                                         <TouchableOpacity
                                             key={item._id}
                                             onPress={() => router.push(`/worker-profile?workerId=${item._id}`)}
-                                            className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-row items-center justify-between"
+                                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex-row items-center justify-between"
                                         >
                                             <View className="flex-row items-center flex-1 mr-3">
                                                 {profileImage ? (
                                                     <Image
                                                         source={{ uri: profileImage }}
-                                                        className="w-12 h-12 rounded-full bg-slate-800 mr-3"
+                                                        className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mr-3"
                                                     />
                                                 ) : (
                                                     <View className="w-12 h-12 rounded-full bg-indigo-600 items-center justify-center mr-3">
@@ -825,23 +829,23 @@ export default function SearchScreen() {
                                                     </View>
                                                 )}
                                                 <View className="flex-1">
-                                                    <Text className="text-white font-bold text-sm" numberOfLines={1}>
+                                                    <Text className="text-slate-900 dark:text-white font-bold text-sm" numberOfLines={1}>
                                                         {fullName}
                                                     </Text>
-                                                    <Text className="text-slate-400 text-xs mt-0.5" numberOfLines={1}>
+                                                    <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5" numberOfLines={1}>
                                                         {item.profession || "Specialist"}
                                                     </Text>
                                                     <View className="flex-row items-center mt-1">
                                                         <Ionicons name="star" size={12} color="#f59e0b" />
-                                                        <Text className="text-white text-[10px] font-extrabold ml-1">
+                                                        <Text className="text-slate-900 dark:text-white text-[10px] font-extrabold ml-1">
                                                             {item.averageRating > 0 ? item.averageRating.toFixed(1) : "New"}
                                                         </Text>
-                                                        <Text className="text-slate-700 text-xs mx-1.5">|</Text>
-                                                        <Text className="text-slate-300 text-[10px] font-semibold">
+                                                        <Text className="text-slate-300 dark:text-slate-700 text-xs mx-1.5">|</Text>
+                                                        <Text className="text-slate-600 dark:text-slate-300 text-[10px] font-semibold">
                                                             {item.experienceYears} Years Exp
                                                         </Text>
-                                                        <Text className="text-slate-700 text-xs mx-1.5">|</Text>
-                                                        <Text className="text-slate-400 text-[10px]" numberOfLines={1}>
+                                                        <Text className="text-slate-300 dark:text-slate-700 text-xs mx-1.5">|</Text>
+                                                        <Text className="text-slate-500 dark:text-slate-400 text-[10px]" numberOfLines={1}>
                                                             {cityLoc}
                                                         </Text>
                                                     </View>
@@ -849,10 +853,10 @@ export default function SearchScreen() {
                                             </View>
 
                                             {/* Availability Badge */}
-                                            <View className="flex-row items-center bg-slate-950 border border-slate-850 rounded-full px-2 py-1">
+                                            <View className="flex-row items-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-full px-2 py-1">
                                                 <View className={`w-1.5 h-1.5 rounded-full mr-1 ${isAvailable ? "bg-emerald-500" : "bg-amber-500"
                                                     }`} />
-                                                <Text className="text-slate-300 text-[9px] font-bold">
+                                                <Text className="text-slate-600 dark:text-slate-300 text-[9px] font-bold">
                                                     {isAvailable ? "Available" : "Busy"}
                                                 </Text>
                                             </View>
@@ -864,11 +868,11 @@ export default function SearchScreen() {
                     )}
                 </ScrollView>
             ) : (
-                /* Fallback if suggestions are not showing but query is not empty */
                 <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled">
+                    {/* Fallback if suggestions are not showing but query is not empty */}
                     <View className="mt-20 items-center justify-center">
                         <Ionicons name="search-outline" size={48} color="#64748b" />
-                        <Text className="text-slate-400 text-sm font-bold mt-4">Press search or select a suggestion to search</Text>
+                        <Text className="text-slate-500 dark:text-slate-400 text-sm font-bold mt-4">Press search or select a suggestion to search</Text>
                     </View>
                 </ScrollView>
             )}

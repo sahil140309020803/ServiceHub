@@ -13,11 +13,14 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 import * as ImagePicker from "expo-image-picker";
 import { uploadGalleryItem } from "../../src/api/galleryApi";
 
 export default function AddWorkScreen() {
     const router = useRouter();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -107,18 +110,18 @@ export default function AddWorkScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950" edges={["top", "left", "right"]}>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={["top", "left", "right"]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
             {/* Header */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-900 bg-slate-950">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950">
                 <TouchableOpacity
                     onPress={() => router.back()}
-                    className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full items-center justify-center"
+                    className="w-10 h-10 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full items-center justify-center active:opacity-85"
                 >
-                    <Ionicons name="arrow-back" size={20} color="white" />
+                    <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#0f172a"} />
                 </TouchableOpacity>
-                <Text className="text-lg font-bold text-white">Upload Project Photo</Text>
+                <Text className="text-lg font-bold text-slate-900 dark:text-white">Upload Project Photo</Text>
                 <View className="w-10" />
             </View>
 
@@ -126,7 +129,7 @@ export default function AddWorkScreen() {
                 {/* Photo Upload Card Selector */}
                 <TouchableOpacity
                     onPress={handlePickImage}
-                    className="bg-slate-900 border-2 border-dashed border-slate-800 rounded-2xl h-[200] items-center justify-center overflow-hidden mb-6"
+                    className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl h-[200] items-center justify-center overflow-hidden mb-6 shadow-sm"
                 >
                     {selectedImage ? (
                         <Image
@@ -137,42 +140,42 @@ export default function AddWorkScreen() {
                     ) : (
                         <View className="items-center">
                             <Ionicons name="cloud-upload-outline" size={40} color="#6366f1" />
-                            <Text className="text-white font-bold text-sm mt-3">Select Project Photo</Text>
-                            <Text className="text-slate-500 text-[10px] mt-1 font-medium">JPEG, JPG, PNG, WEBP (Max 5MB)</Text>
+                            <Text className="text-slate-800 dark:text-white font-bold text-sm mt-3">Select Project Photo</Text>
+                            <Text className="text-slate-400 dark:text-slate-500 text-[10px] mt-1 font-medium">JPEG, JPG, PNG, WEBP (Max 5MB)</Text>
                         </View>
                     )}
                 </TouchableOpacity>
 
                 {/* Title input */}
                 <View className="gap-y-1.5 mb-5">
-                    <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest pl-1">Project Title</Text>
+                    <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest pl-1">Project Title</Text>
                     <TextInput
-                        className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 text-white text-sm"
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 text-slate-900 dark:text-white text-sm"
                         placeholder="e.g. Living room wiring, kitchen sink pipe replacement"
-                        placeholderTextColor="#64748b"
+                        placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                         value={title}
                         onChangeText={setTitle}
                         maxLength={100}
                     />
-                    <Text className="text-slate-500 text-[9px] text-right font-medium pr-1">
+                    <Text className="text-slate-400 dark:text-slate-500 text-[9px] text-right font-medium pr-1">
                         {title.length}/100
                     </Text>
                 </View>
 
                 {/* Description input */}
                 <View className="gap-y-1.5 mb-8">
-                    <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest pl-1">Project Description (Optional)</Text>
+                    <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest pl-1">Project Description (Optional)</Text>
                     <TextInput
-                        className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 text-white text-sm min-h-[100]"
+                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 text-slate-900 dark:text-white text-sm min-h-[100]"
                         placeholder="Describe what work was done, materials used, etc..."
-                        placeholderTextColor="#64748b"
+                        placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                         multiline
                         textAlignVertical="top"
                         value={description}
                         onChangeText={setDescription}
                         maxLength={500}
                     />
-                    <Text className="text-slate-500 text-[9px] text-right font-medium pr-1">
+                    <Text className="text-slate-400 dark:text-slate-500 text-[9px] text-right font-medium pr-1">
                         {description.length}/500
                     </Text>
                 </View>

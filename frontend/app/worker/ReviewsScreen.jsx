@@ -10,10 +10,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
+import { useColorScheme } from "nativewind";
 import api from "../../src/services/api";
 
 export default function ReviewsScreen() {
     const isFocused = useIsFocused();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
+
     const [reviews, setReviews] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -75,12 +79,12 @@ export default function ReviewsScreen() {
         if (stats.averageRating < 3.0) ratingText = "Average";
 
         return (
-            <View className="bg-slate-900 border border-slate-800/80 rounded-3xl p-5 mb-5 flex-row items-center justify-between shadow-md shadow-slate-950/20 relative overflow-hidden">
+            <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 rounded-3xl p-5 mb-5 flex-row items-center justify-between shadow-sm relative overflow-hidden">
                 <View className="absolute top-[-30] right-[-30] w-28 h-28 bg-indigo-600/10 rounded-full blur-xl" />
 
                 <View className="flex-1">
                     <View className="flex-row items-baseline">
-                        <Text className="text-4xl font-black text-white">{stats.averageRating.toFixed(1)}</Text>
+                        <Text className="text-4xl font-black text-slate-900 dark:text-white">{stats.averageRating.toFixed(1)}</Text>
                         <Text className="text-slate-500 text-xs font-semibold ml-1.5">/5</Text>
                     </View>
 
@@ -95,14 +99,14 @@ export default function ReviewsScreen() {
                         ))}
                     </View>
 
-                    <Text className="text-slate-400 text-xs mt-2 font-medium">
+                    <Text className="text-slate-500 dark:text-slate-400 text-xs mt-2 font-medium">
                         Based on {stats.totalReviews} customer feedback{stats.totalReviews > 1 ? "s" : ""}
                     </Text>
                 </View>
 
-                <View className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl px-4 py-3 items-center justify-center">
+                <View className="bg-indigo-50 dark:bg-indigo-600/10 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl px-4 py-3 items-center justify-center">
                     <Ionicons name="ribbon-outline" size={22} color="#6366f1" />
-                    <Text className="text-indigo-400 font-extrabold text-xs mt-1.5">{ratingText}</Text>
+                    <Text className="text-indigo-600 dark:text-indigo-400 font-extrabold text-xs mt-1.5">{ratingText}</Text>
                 </View>
             </View>
         );
@@ -113,7 +117,7 @@ export default function ReviewsScreen() {
         const custName = customer.fullName || "Customer";
 
         return (
-            <View className="bg-slate-900 border border-slate-800/70 rounded-3xl p-5 mb-4 shadow-md relative overflow-hidden">
+            <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/70 rounded-3xl p-5 mb-4 shadow-sm relative overflow-hidden">
                 {/* Background double quotation mark for visual flair */}
                 <View className="absolute right-4 bottom-2 opacity-5">
                     <Ionicons name="chatbubbles" size={60} color="#64748b" />
@@ -122,17 +126,17 @@ export default function ReviewsScreen() {
                 <View className="flex-row justify-between items-start">
                     <View className="flex-row items-center flex-1 mr-2">
                         {/* Initial Circle with indigo gradient */}
-                        <View className="w-11 h-11 rounded-full bg-indigo-650 items-center justify-center mr-3.5 border border-indigo-500/30">
+                        <View className="w-11 h-11 rounded-full bg-indigo-600 items-center justify-center mr-3.5 border border-indigo-500/30">
                             <Text className="text-white font-extrabold text-sm">
                                 {getInitials(custName)}
                             </Text>
                         </View>
 
                         <View className="flex-1">
-                            <Text className="text-white font-extrabold text-sm" numberOfLines={1}>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-sm" numberOfLines={1}>
                                 {custName}
                             </Text>
-                            <Text className="text-slate-500 text-[10px] font-semibold mt-0.5">
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold mt-0.5">
                                 {new Date(item.createdAt).toLocaleDateString()}
                             </Text>
                         </View>
@@ -152,11 +156,11 @@ export default function ReviewsScreen() {
                 </View>
 
                 {item.reviewText ? (
-                    <Text className="text-slate-300 text-xs leading-relaxed mt-4 pl-0.5">
-                        "{item.reviewText}"
+                    <Text className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed mt-4 pl-0.5">
+                        {"\""}{item.reviewText}{"\""}
                     </Text>
                 ) : (
-                    <Text className="text-slate-500 text-xs italic mt-4 pl-0.5">
+                    <Text className="text-slate-500 dark:text-slate-500 text-xs italic mt-4 pl-0.5">
                         No review comments left.
                     </Text>
                 )}
@@ -165,13 +169,13 @@ export default function ReviewsScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950" edges={["top", "left", "right"]}>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={["top", "left", "right"]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
             {/* Header section without static aggregate summaries */}
-            <View className="px-5 py-4 border-b border-slate-900 bg-slate-950">
-                <Text className="text-2xl font-extrabold text-white">Client Reviews</Text>
-                <Text className="text-slate-400 text-xs mt-0.5">Ratings and feedback from completed orders</Text>
+            <View className="px-5 py-4 border-b border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950">
+                <Text className="text-2xl font-extrabold text-slate-900 dark:text-white">Client Reviews</Text>
+                <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Ratings and feedback from completed orders</Text>
             </View>
 
             {isLoading ? (
@@ -180,11 +184,11 @@ export default function ReviewsScreen() {
                 </View>
             ) : reviews.length === 0 ? (
                 <View className="flex-1 items-center justify-center px-6">
-                    <View className="w-16 h-16 bg-slate-900 border border-slate-800 rounded-full items-center justify-center mb-4">
+                    <View className="w-16 h-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full items-center justify-center mb-4 shadow-sm">
                         <Ionicons name="chatbox-outline" size={28} color="#64748b" />
                     </View>
-                    <Text className="text-white text-base font-bold text-center">No reviews received yet</Text>
-                    <Text className="text-slate-500 text-xs mt-1 text-center max-w-xs leading-relaxed">
+                    <Text className="text-slate-900 dark:text-white text-base font-bold text-center">No reviews received yet</Text>
+                    <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1 text-center max-w-xs leading-relaxed">
                         Once clients book your services and complete their orders, their ratings and reviews will show up here.
                     </Text>
                 </View>

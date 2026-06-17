@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 import useAuthStore from "../src/store/useAuthStore";
 
 // Form validation schema
@@ -34,6 +35,9 @@ export default function LoginScreen() {
     const router = useRouter();
     const { login, isLoading, error: serverError, clearError } = useAuthStore();
     const [showPassword, setShowPassword] = useState(false);
+    
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     // Clear server errors when screen mounts or changes
     useEffect(() => {
@@ -57,8 +61,8 @@ export default function LoginScreen() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950">
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
@@ -72,15 +76,15 @@ export default function LoginScreen() {
                         <View>
                             <TouchableOpacity
                                 onPress={() => router.replace("/")}
-                                className="w-10 h-10 bg-slate-900 rounded-full items-center justify-center border border-slate-800 mb-6"
+                                className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full items-center justify-center border border-slate-200 dark:border-slate-800 mb-6 active:opacity-80"
                             >
-                                <Ionicons name="arrow-back" size={20} color="white" />
+                                <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#0f172a"} />
                             </TouchableOpacity>
 
-                            <Text className="text-3xl font-extrabold text-white tracking-tight">
+                            <Text className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                                 Welcome Back
                             </Text>
-                            <Text className="text-slate-400 text-sm mt-1.5">
+                            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1.5">
                                 Sign in to your ServiceHub account to connect with professionals.
                             </Text>
                         </View>
@@ -88,10 +92,10 @@ export default function LoginScreen() {
                         {/* Form Inputs Container */}
                         <View className="my-8 gap-y-5">
                             {/* Server-Side Errors */}
-                            {serverError && (
+                            {!!serverError && (
                                 <View className="bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg flex-row items-center space-x-2">
                                     <Ionicons name="alert-circle" size={20} color="#f43f5e" />
-                                    <Text className="text-rose-400 text-sm font-medium ml-2 flex-1">
+                                    <Text className="text-rose-600 dark:text-rose-400 text-sm font-medium ml-2 flex-1">
                                         {serverError}
                                     </Text>
                                 </View>
@@ -99,17 +103,17 @@ export default function LoginScreen() {
 
                             {/* Email Input */}
                             <View className="gap-y-2">
-                                <Text className="text-slate-300 font-semibold text-sm">Email Address</Text>
+                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Email Address</Text>
                                 <Controller
                                     control={control}
                                     name="email"
                                     render={({ field: { onChange, onBlur, value } }) => (
-                                        <View className={`flex-row items-center bg-slate-900 border px-4 py-3.5 rounded-xl ${errors.email ? "border-rose-500" : "border-slate-800 focus:border-indigo-500"}`}>
+                                        <View className={`flex-row items-center bg-white dark:bg-slate-900 border px-4 py-3.5 rounded-xl ${errors.email ? "border-rose-500" : "border-slate-200 dark:border-slate-800 focus:border-indigo-500"}`}>
                                             <Ionicons name="mail-outline" size={20} color="#94a3b8" />
                                             <TextInput
-                                                className="flex-1 ml-3 text-white text-base"
+                                                className="flex-1 ml-3 text-slate-900 dark:text-white text-base"
                                                 placeholder="Enter your email"
-                                                placeholderTextColor="#64748b"
+                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                                 keyboardType="email-address"
                                                 autoCapitalize="none"
                                                 onBlur={onBlur}
@@ -128,17 +132,17 @@ export default function LoginScreen() {
 
                             {/* Password Input */}
                             <View className="gap-y-2">
-                                <Text className="text-slate-300 font-semibold text-sm">Password</Text>
+                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Password</Text>
                                 <Controller
                                     control={control}
                                     name="password"
                                     render={({ field: { onChange, onBlur, value } }) => (
-                                        <View className={`flex-row items-center bg-slate-900 border px-4 py-3.5 rounded-xl ${errors.password ? "border-rose-500" : "border-slate-800 focus:border-indigo-500"}`}>
+                                        <View className={`flex-row items-center bg-white dark:bg-slate-900 border px-4 py-3.5 rounded-xl ${errors.password ? "border-rose-500" : "border-slate-200 dark:border-slate-800 focus:border-indigo-500"}`}>
                                             <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" />
                                             <TextInput
-                                                className="flex-1 ml-3 text-white text-base"
+                                                className="flex-1 ml-3 text-slate-900 dark:text-white text-base"
                                                 placeholder="Enter your password"
-                                                placeholderTextColor="#64748b"
+                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                                 secureTextEntry={!showPassword}
                                                 autoCapitalize="none"
                                                 onBlur={onBlur}
@@ -178,9 +182,9 @@ export default function LoginScreen() {
                             </TouchableOpacity>
 
                             <View className="flex-row justify-center items-center py-2">
-                                <Text className="text-slate-400 text-sm">{"Don't have an account?"}</Text>
+                                <Text className="text-slate-500 dark:text-slate-400 text-sm">{"Don't have an account?"}</Text>
                                 <TouchableOpacity onPress={() => router.replace("/register")}>
-                                    <Text className="text-indigo-400 font-bold text-sm ml-1.5">Sign Up</Text>
+                                    <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-sm ml-1.5">Sign Up</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import api from "../src/services/api";
@@ -35,6 +36,8 @@ if (Platform.OS !== "web") {
 export default function ManageWorkerProfileScreen() {
     const router = useRouter();
     const { profileCompleted, logout, token, user } = useAuthStore();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     const [profession, setProfession] = useState("");
     const [experienceYears, setExperienceYears] = useState("");
@@ -362,7 +365,7 @@ export default function ManageWorkerProfileScreen() {
 
     if (isPageLoading) {
         return (
-            <SafeAreaView className="flex-1 bg-slate-950 justify-center items-center">
+            <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950 justify-center items-center">
                 <ActivityIndicator size="large" color="#6366f1" />
             </SafeAreaView>
         );
@@ -373,28 +376,28 @@ export default function ManageWorkerProfileScreen() {
     const isCoordsValid = latVal !== 0 && lonVal !== 0;
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950" edges={["top", "left", "right"]}>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={["top", "left", "right"]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
             {/* Header */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-900 bg-slate-950">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950">
                 {profileCompleted ? (
                     <TouchableOpacity
                         onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/profile")}
-                        className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full items-center justify-center"
+                        className="w-10 h-10 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full items-center justify-center active:opacity-85"
                     >
-                        <Ionicons name="arrow-back" size={20} color="white" />
+                        <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#0f172a"} />
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
                         onPress={logout}
-                        className="flex-row items-center bg-slate-900 border border-rose-950 px-3.5 py-2 rounded-xl active:opacity-90"
+                        className="flex-row items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-rose-950 px-3.5 py-2 rounded-xl active:opacity-90"
                     >
                         <Ionicons name="log-out-outline" size={16} color="#f43f5e" />
                         <Text className="text-rose-500 font-bold ml-1.5 text-xs">Logout</Text>
                     </TouchableOpacity>
                 )}
-                <Text className="text-lg font-bold text-white">Manage Professional Profile</Text>
+                <Text className="text-lg font-bold text-slate-900 dark:text-white">Manage Professional Profile</Text>
                 <View className="w-10" />
             </View>
 
@@ -402,11 +405,11 @@ export default function ManageWorkerProfileScreen() {
                 <View className="px-5 py-6 gap-y-5">
                     {/* Onboarding Alert Banner */}
                     {!profileCompleted && (
-                        <View className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-4 flex-row items-start space-x-3 mb-2">
+                        <View className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex-row items-start space-x-3 mb-2">
                             <Ionicons name="information-circle-outline" size={20} color="#6366f1" />
                             <View className="flex-1 ml-2">
-                                <Text className="text-white font-extrabold text-sm">Welcome to ServiceHub!</Text>
-                                <Text className="text-slate-400 text-xs mt-1 leading-relaxed">
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-sm">Welcome to ServiceHub!</Text>
+                                <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1 leading-relaxed">
                                     Please complete your professional profile setup. You will get immediate access to customer requests once saved.
                                 </Text>
                             </View>
@@ -415,7 +418,7 @@ export default function ManageWorkerProfileScreen() {
 
                     {/* Profile Image Picker (Optional) */}
                     <View className="items-center my-2">
-                        <Text className="text-slate-300 font-semibold text-sm self-start mb-2">Profile Photo (Optional)</Text>
+                        <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm self-start mb-2">Profile Photo (Optional)</Text>
                         <TouchableOpacity 
                             onPress={pickImage} 
                             disabled={isUploading}
@@ -441,18 +444,18 @@ export default function ManageWorkerProfileScreen() {
                                 <Ionicons name="camera" size={14} color="white" />
                             </View>
                         </TouchableOpacity>
-                        <Text className="text-slate-500 text-[11px] mt-1.5 font-medium">
+                        <Text className="text-slate-500 dark:text-slate-400 text-[11px] mt-1.5 font-medium">
                             {isUploading ? "Uploading..." : "Click to select profile photo"}
                         </Text>
                     </View>
 
                     {/* Profession */}
                     <View className="gap-y-2">
-                        <Text className="text-slate-300 font-semibold text-sm">Profession Title</Text>
+                        <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Profession Title</Text>
                         <TextInput
-                            className="bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl text-white text-base"
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl text-slate-900 dark:text-white text-base"
                             placeholder="e.g. Master Plumber, Senior Electrician"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                             value={profession}
                             onChangeText={setProfession}
                         />
@@ -460,11 +463,11 @@ export default function ManageWorkerProfileScreen() {
 
                     {/* Experience Years */}
                     <View className="gap-y-2">
-                        <Text className="text-slate-300 font-semibold text-sm">Years of Experience</Text>
+                        <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Years of Experience</Text>
                         <TextInput
-                            className="bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl text-white text-base"
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl text-slate-900 dark:text-white text-base"
                             placeholder="e.g. 5"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                             keyboardType="numeric"
                             value={experienceYears}
                             onChangeText={setExperienceYears}
@@ -473,11 +476,11 @@ export default function ManageWorkerProfileScreen() {
 
                     {/* About Bio */}
                     <View className="gap-y-2">
-                        <Text className="text-slate-300 font-semibold text-sm">About / Bio</Text>
+                        <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">About / Bio</Text>
                         <TextInput
-                            className="bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl text-white text-base min-h-[100]"
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl text-slate-900 dark:text-white text-base min-h-[100]"
                             placeholder="Describe your expertise, services offered, and quality assurance..."
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                             multiline
                             textAlignVertical="top"
                             value={about}
@@ -487,11 +490,11 @@ export default function ManageWorkerProfileScreen() {
 
                     {/* WhatsApp */}
                     <View className="gap-y-2">
-                        <Text className="text-slate-300 font-semibold text-sm">WhatsApp Contact Number</Text>
+                        <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">WhatsApp Contact Number</Text>
                         <TextInput
-                            className="bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl text-white text-base"
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl text-slate-900 dark:text-white text-base"
                             placeholder="e.g. +15556781234"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                             keyboardType="phone-pad"
                             value={whatsappNumber}
                             onChangeText={setWhatsappNumber}
@@ -500,11 +503,11 @@ export default function ManageWorkerProfileScreen() {
 
                     {/* Skills Comma Separated */}
                     <View className="gap-y-2">
-                        <Text className="text-slate-300 font-semibold text-sm">Skills (Comma-separated)</Text>
+                        <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Skills (Comma-separated)</Text>
                         <TextInput
-                            className="bg-slate-900 border border-slate-800 px-4 py-3.5 rounded-xl text-white text-base"
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3.5 rounded-xl text-slate-900 dark:text-white text-base"
                             placeholder="e.g. pipe leaks, drain install, faucet repair"
-                            placeholderTextColor="#64748b"
+                            placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                             value={skillsString}
                             onChangeText={setSkillsString}
                         />
@@ -512,38 +515,38 @@ export default function ManageWorkerProfileScreen() {
 
                     {/* Service Areas (City, Area, State) */}
                     <View className="gap-y-3">
-                        <Text className="text-white font-extrabold text-base border-t border-slate-900 pt-4 mt-2">
+                        <Text className="text-slate-900 dark:text-white font-extrabold text-base border-t border-slate-200 dark:border-slate-900 pt-4 mt-2">
                             Service Area Details
                         </Text>
                         
                         <View className="gap-y-1">
-                            <Text className="text-slate-400 text-xs">Area / Neighborhood</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-xs">Area / Neighborhood</Text>
                             <TextInput
-                                className="bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl text-white text-sm"
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-xl text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. Brooklyn, Manhattan"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={areaInput}
                                 onChangeText={setAreaInput}
                             />
                         </View>
 
                         <View className="gap-y-1">
-                            <Text className="text-slate-400 text-xs">City</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-xs">City</Text>
                             <TextInput
-                                className="bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl text-white text-sm"
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-xl text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. New York"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={cityInput}
                                 onChangeText={setCityInput}
                             />
                         </View>
 
                         <View className="gap-y-1">
-                            <Text className="text-slate-400 text-xs">State</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-xs">State</Text>
                             <TextInput
-                                className="bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl text-white text-sm"
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-xl text-slate-900 dark:text-white text-sm"
                                 placeholder="e.g. NY"
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 value={stateInput}
                                 onChangeText={setStateInput}
                             />
@@ -551,8 +554,8 @@ export default function ManageWorkerProfileScreen() {
                     </View>
 
                     {/* Geolocation Section */}
-                    <View className="gap-y-3 border-t border-slate-900 pt-4 mt-2">
-                        <Text className="text-white font-extrabold text-base">Coordinates & Address</Text>
+                    <View className="gap-y-3 border-t border-slate-200 dark:border-slate-900 pt-4 mt-2">
+                        <Text className="text-slate-900 dark:text-white font-extrabold text-base">Coordinates & Address</Text>
                         
                         {/* Auto detect button */}
                         <TouchableOpacity
@@ -574,15 +577,15 @@ export default function ManageWorkerProfileScreen() {
 
                         {/* Manual Search Autocomplete input */}
                         <View className="gap-y-1.5 relative">
-                            <Text className="text-slate-400 text-xs">Manual Location Search</Text>
-                            <View className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 flex-row items-center">
+                            <Text className="text-slate-500 dark:text-slate-400 text-xs">Manual Location Search</Text>
+                            <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 flex-row items-center">
                                 <Ionicons name="search" size={16} color="#64748b" className="mr-2" />
                                 <TextInput
                                     value={locationSearch}
                                     onChangeText={setLocationSearch}
                                     placeholder="Type to search e.g. Model Town Ambala..."
-                                    placeholderTextColor="#64748b"
-                                    className="flex-1 text-white text-xs ml-1 py-1"
+                                    placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                    className="flex-1 text-slate-900 dark:text-white text-xs ml-1 py-1"
                                 />
                                 {isSearchingLocation && (
                                     <ActivityIndicator size="small" color="#6366f1" />
@@ -591,15 +594,15 @@ export default function ManageWorkerProfileScreen() {
 
                             {/* Autocomplete Dropdown list */}
                             {suggestions.length > 0 && (
-                                <View className="bg-slate-900 border border-slate-850 rounded-xl mt-1 overflow-hidden z-50">
+                                <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl mt-1 overflow-hidden z-50 shadow-lg">
                                     {suggestions.map((item, index) => (
                                         <TouchableOpacity
                                             key={index}
                                             onPress={() => handleSelectSuggestion(item)}
-                                            className="px-4 py-3 border-b border-slate-950 flex-row items-center active:bg-slate-850"
+                                            className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex-row items-center active:bg-slate-100 dark:active:bg-slate-800"
                                         >
                                             <Ionicons name="location-outline" size={14} color="#6366f1" className="mr-2" />
-                                            <Text className="text-white text-xs ml-2 flex-1" numberOfLines={2}>
+                                            <Text className="text-slate-900 dark:text-white text-xs ml-2 flex-1" numberOfLines={2}>
                                                 {item.display_name}
                                             </Text>
                                         </TouchableOpacity>
@@ -610,22 +613,22 @@ export default function ManageWorkerProfileScreen() {
 
                         <View className="flex-row gap-x-4 mt-1">
                             <View className="flex-1 gap-y-1">
-                                <Text className="text-slate-400 text-xs">Latitude</Text>
+                                <Text className="text-slate-500 dark:text-slate-400 text-xs">Latitude</Text>
                                 <TextInput
-                                    className="bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl text-white text-sm"
+                                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-xl text-slate-900 dark:text-white text-sm"
                                     placeholder="0.0"
-                                    placeholderTextColor="#64748b"
+                                    placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                     keyboardType="numeric"
                                     value={latitude}
                                     onChangeText={setLatitude}
                                 />
                             </View>
                             <View className="flex-1 gap-y-1">
-                                <Text className="text-slate-400 text-xs">Longitude</Text>
+                                <Text className="text-slate-500 dark:text-slate-400 text-xs">Longitude</Text>
                                 <TextInput
-                                    className="bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl text-white text-sm"
+                                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-xl text-slate-900 dark:text-white text-sm"
                                     placeholder="0.0"
-                                    placeholderTextColor="#64748b"
+                                    placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                     keyboardType="numeric"
                                     value={longitude}
                                     onChangeText={setLongitude}
@@ -634,11 +637,11 @@ export default function ManageWorkerProfileScreen() {
                         </View>
 
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-400 text-xs">Full Address Description</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-xs">Full Address Description</Text>
                             <TextInput
-                                className="bg-slate-900 border border-slate-800 px-4 py-3 rounded-xl text-white text-sm min-h-[60]"
+                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-3 rounded-xl text-slate-900 dark:text-white text-sm min-h-[60]"
                                 placeholder="Full street address..."
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                 multiline
                                 value={address}
                                 onChangeText={setAddress}
@@ -648,7 +651,7 @@ export default function ManageWorkerProfileScreen() {
                         {/* Map Preview with draggable marker */}
                         {isCoordsValid && (
                             <View className="gap-y-1 mt-1">
-                                <Text className="text-slate-400 text-xs font-semibold">Map Location Preview (Drag Pin to Fine-Tune)</Text>
+                                <Text className="text-slate-500 dark:text-slate-400 text-xs font-semibold">Map Location Preview (Drag Pin to Fine-Tune)</Text>
                                 {MapView ? (
                                     <View className="w-full h-[220] rounded-2xl border border-slate-800 overflow-hidden relative">
                                         <MapView
@@ -670,12 +673,12 @@ export default function ManageWorkerProfileScreen() {
                                         </MapView>
                                     </View>
                                 ) : (
-                                    <View className="w-full h-[120] rounded-xl border border-slate-800 bg-slate-900 items-center justify-center p-4">
+                                    <View className="w-full h-[120] rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 items-center justify-center p-4 shadow-sm">
                                         <Ionicons name="map-outline" size={24} color="#6366f1" />
-                                        <Text className="text-slate-400 text-xs mt-2 text-center">
+                                        <Text className="text-slate-500 dark:text-slate-400 text-xs mt-2 text-center">
                                             Interactive map preview not supported on web. Coordinates set to:
                                         </Text>
-                                        <Text className="text-white text-xs font-mono mt-1 text-center">
+                                        <Text className="text-slate-900 dark:text-white text-xs font-mono mt-1 text-center">
                                             Lat: {latVal.toFixed(6)}, Lng: {lonVal.toFixed(6)}
                                         </Text>
                                     </View>
@@ -685,8 +688,8 @@ export default function ManageWorkerProfileScreen() {
                     </View>
 
                     {/* Category selectors */}
-                    <View className="gap-y-2 border-t border-slate-900 pt-4 mt-2 mb-4">
-                        <Text className="text-white font-extrabold text-base mb-1">
+                    <View className="gap-y-2 border-t border-slate-200 dark:border-slate-900 pt-4 mt-2 mb-4">
+                        <Text className="text-slate-900 dark:text-white font-extrabold text-base mb-1">
                             Select Service Categories
                         </Text>
                         <View className="flex-row flex-wrap gap-2">
@@ -696,9 +699,9 @@ export default function ManageWorkerProfileScreen() {
                                     <TouchableOpacity
                                         key={cat._id}
                                         onPress={() => handleToggleCategory(cat._id)}
-                                        className={`px-3 py-2 rounded-lg border ${isSelected ? "bg-indigo-600/10 border-indigo-500" : "bg-slate-900 border-slate-800"}`}
+                                        className={`px-3 py-2 rounded-lg border ${isSelected ? "bg-indigo-600/10 border-indigo-500" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}
                                     >
-                                        <Text className={`text-xs font-semibold ${isSelected ? "text-indigo-400" : "text-slate-400"}`}>
+                                        <Text className={`text-xs font-semibold ${isSelected ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400"}`}>
                                             {cat.name}
                                         </Text>
                                     </TouchableOpacity>
@@ -710,7 +713,7 @@ export default function ManageWorkerProfileScreen() {
             </ScrollView>
 
             {/* Save Button */}
-            <View className="p-5 border-t border-slate-900 bg-slate-950">
+            <View className="p-5 border-t border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950">
                 <TouchableOpacity
                     onPress={handleSave}
                     disabled={isSaving}

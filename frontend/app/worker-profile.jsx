@@ -14,6 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 import api from "../src/services/api";
 import useAuthStore from "../src/store/useAuthStore";
 
@@ -21,6 +22,8 @@ export default function WorkerProfileScreen() {
     const router = useRouter();
     const { workerId } = useLocalSearchParams();
     const { user } = useAuthStore();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     const [profile, setProfile] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -277,7 +280,7 @@ export default function WorkerProfileScreen() {
 
     if (isLoading) {
         return (
-            <SafeAreaView className="flex-1 bg-slate-950 justify-center items-center">
+            <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950 justify-center items-center">
                 <ActivityIndicator size="large" color="#6366f1" />
             </SafeAreaView>
         );
@@ -285,9 +288,9 @@ export default function WorkerProfileScreen() {
 
     if (error || !profile) {
         return (
-            <SafeAreaView className="flex-1 bg-slate-950 justify-center items-center px-6">
+            <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950 justify-center items-center px-6">
                 <Ionicons name="alert-circle-outline" size={48} color="#f43f5e" />
-                <Text className="text-white text-base font-bold mt-4 text-center">
+                <Text className="text-slate-900 dark:text-white text-base font-bold mt-4 text-center">
                     {error || "Profile not found"}
                 </Text>
                 <TouchableOpacity
@@ -305,38 +308,38 @@ export default function WorkerProfileScreen() {
     const profileImage = userDetails.profileImage || "";
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-950" edges={["top", "left", "right"]}>
-            <StatusBar barStyle="light-content" />
+        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950" edges={["top", "left", "right"]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
             {/* Sticky Header */}
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-900 bg-slate-950">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950">
                 <TouchableOpacity
                     onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/Home")}
-                    className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full items-center justify-center"
+                    className="w-10 h-10 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full items-center justify-center"
                 >
-                    <Ionicons name="arrow-back" size={20} color="white" />
+                    <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#0f172a"} />
                 </TouchableOpacity>
-                <Text className="text-lg font-bold text-white">Professional Profile</Text>
+                <Text className="text-lg font-bold text-slate-900 dark:text-white">Professional Profile</Text>
                 <View className="flex-row items-center">
                     {/* Flag / Report Profile Button */}
                     {user && profile.userId?._id !== user._id && (
                         <TouchableOpacity
                             onPress={() => setShowReportModal(true)}
-                            className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full items-center justify-center mr-2 active:opacity-80"
+                            className="w-10 h-10 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full items-center justify-center mr-2 active:opacity-80"
                         >
-                            <Ionicons name="flag-outline" size={16} color="#94a3b8" />
+                            <Ionicons name="flag-outline" size={16} color={isDark ? "#94a3b8" : "#64748b"} />
                         </TouchableOpacity>
                     )}
 
                     {/* Heart Bookmarks Button */}
                     <TouchableOpacity
                         onPress={handleToggleFavorite}
-                        className="w-10 h-10 bg-slate-900 border border-slate-800 rounded-full items-center justify-center active:opacity-80"
+                        className="w-10 h-10 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full items-center justify-center active:opacity-80"
                     >
                         <Ionicons
                             name={isFavorited ? "heart" : "heart-outline"}
                             size={20}
-                            color={isFavorited ? "#ef4444" : "white"}
+                            color={isFavorited ? "#ef4444" : (isDark ? "white" : "#0f172a")}
                         />
                     </TouchableOpacity>
                 </View>
@@ -344,29 +347,29 @@ export default function WorkerProfileScreen() {
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Hero Avatar Card */}
-                <View className="items-center py-6 bg-slate-900 border-b border-slate-800">
-                    <View className="p-1 bg-slate-800/85 rounded-2xl border border-slate-700/50 relative">
+                <View className="items-center py-6 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                    <View className="p-1 bg-slate-100 dark:bg-slate-800/85 rounded-2xl border border-slate-200 dark:border-slate-700/50 relative">
                         {profileImage ? (
                             <Image
                                 source={{ uri: profileImage }}
-                                className="w-24 h-24 rounded-2xl border border-slate-700 bg-slate-800"
+                                className="w-24 h-24 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
                             />
                         ) : (
-                            <View className="w-24 h-24 bg-indigo-600 rounded-2xl items-center justify-center border border-slate-700 shadow-xl shadow-indigo-500/20">
+                            <View className="w-24 h-24 bg-indigo-600 rounded-2xl items-center justify-center border border-slate-200 dark:border-slate-700 shadow-xl shadow-indigo-500/20">
                                 <Text className="text-white text-3xl font-black">
                                     {getInitials(fullName)}
                                 </Text>
                             </View>
                         )}
                         {profile.isVerified && (
-                            <View className="absolute bottom-[-6] right-[-6] bg-indigo-500 rounded-full p-1 border-2 border-slate-900">
+                            <View className="absolute bottom-[-6] right-[-6] bg-indigo-500 rounded-full p-1 border-2 border-white dark:border-slate-900">
                                 <Ionicons name="checkmark" size={16} color="white" />
                             </View>
                         )}
                     </View>
 
-                    <Text className="text-2xl font-extrabold text-white mt-4">{fullName}</Text>
-                    <Text className="text-slate-400 text-sm font-semibold mt-1">
+                    <Text className="text-2xl font-extrabold text-slate-900 dark:text-white mt-4">{fullName}</Text>
+                    <Text className="text-slate-500 dark:text-slate-400 text-sm font-semibold mt-1">
                         {profile.profession}
                     </Text>
 
@@ -374,34 +377,34 @@ export default function WorkerProfileScreen() {
                     <View className="flex-row justify-around w-full mt-6 px-4">
                         <View className="items-center flex-1">
                             <Ionicons name="briefcase-outline" size={16} color="#6366f1" />
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                                 Experience
                             </Text>
-                            <Text className="text-white font-extrabold text-base mt-0.5">
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base mt-0.5">
                                 {profile.experienceYears} Years
                             </Text>
                         </View>
 
-                        <View className="w-[1] h-8 bg-slate-800 self-center" />
+                        <View className="w-[1] h-8 bg-slate-200 dark:bg-slate-800 self-center" />
 
                         <View className="items-center flex-1">
                             <Ionicons name="star" size={16} color="#f59e0b" />
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                                 Rating
                             </Text>
-                            <Text className="text-white font-extrabold text-base mt-0.5">
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base mt-0.5">
                                 {profile.averageRating > 0 ? profile.averageRating.toFixed(1) : "New"}
                             </Text>
                         </View>
 
-                        <View className="w-[1] h-8 bg-slate-800 self-center" />
+                        <View className="w-[1] h-8 bg-slate-200 dark:bg-slate-800 self-center" />
 
                         <View className="items-center flex-1">
                             <Ionicons name="eye-outline" size={16} color="#10b981" />
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                                 Views
                             </Text>
-                            <Text className="text-white font-extrabold text-base mt-0.5">
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base mt-0.5">
                                 {profile.profileViews || 0}
                             </Text>
                         </View>
@@ -412,9 +415,9 @@ export default function WorkerProfileScreen() {
                 <View className="px-5 py-6 gap-y-6">
                     {/* About section */}
                     <View className="gap-y-2">
-                        <Text className="text-white font-extrabold text-base">About Me</Text>
-                        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 border-l-4 border-l-indigo-500">
-                            <Text className="text-slate-300 text-sm leading-relaxed">
+                        <Text className="text-slate-900 dark:text-white font-extrabold text-base">About Me</Text>
+                        <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 border-l-4 border-l-indigo-500">
+                            <Text className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
                                 {profile.about || "This professional hasn't written a bio yet."}
                             </Text>
                         </View>
@@ -423,7 +426,7 @@ export default function WorkerProfileScreen() {
                     {/* Projects Gallery Portfolio section */}
                     {gallery && gallery.length > 0 && (
                         <View className="gap-y-3">
-                            <Text className="text-white font-extrabold text-base">Completed Projects ({gallery.length})</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base">Completed Projects ({gallery.length})</Text>
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
@@ -434,7 +437,7 @@ export default function WorkerProfileScreen() {
                                         key={item._id}
                                         onPress={() => router.push(`/worker/GalleryDetailsScreen?galleryId=${item._id}`)}
                                         activeOpacity={0.95}
-                                        className="bg-slate-900 border border-slate-850 rounded-2xl overflow-hidden mr-3.5 relative"
+                                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden mr-3.5 relative"
                                         style={{ width: 140, height: 140 }}
                                     >
                                         <Image
@@ -466,15 +469,15 @@ export default function WorkerProfileScreen() {
                     {/* Skills section */}
                     {profile.skills?.length > 0 && (
                         <View className="gap-y-2">
-                            <Text className="text-white font-extrabold text-base">Specialist Skills</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base">Specialist Skills</Text>
                             <View className="flex-row flex-wrap gap-2">
                                 {profile.skills.map((skill, idx) => (
                                     <View
                                         key={idx}
-                                        className="bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-2 rounded-xl flex-row items-center"
+                                        className="bg-indigo-500/10 dark:bg-indigo-500/10 border border-indigo-500/20 dark:border-indigo-500/20 px-3.5 py-2 rounded-xl flex-row items-center"
                                     >
-                                        <Ionicons name="sparkles-outline" size={10} color="#818cf8" style={{ marginRight: 6 }} />
-                                        <Text className="text-indigo-300 text-xs font-bold">
+                                        <Ionicons name="sparkles-outline" size={10} color="#6366f1" style={{ marginRight: 6 }} />
+                                        <Text className="text-indigo-600 dark:text-indigo-300 text-xs font-bold">
                                             {skill}
                                         </Text>
                                     </View>
@@ -486,15 +489,15 @@ export default function WorkerProfileScreen() {
                     {/* Service Categories */}
                     {profile.serviceCategories?.length > 0 && (
                         <View className="gap-y-2">
-                            <Text className="text-white font-extrabold text-base">Service Categories</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base">Service Categories</Text>
                             <View className="flex-row flex-wrap gap-2">
                                 {profile.serviceCategories.map((cat) => (
                                     <View
                                         key={cat._id}
-                                        className="bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2 rounded-xl flex-row items-center"
+                                        className="bg-emerald-500/10 dark:bg-emerald-500/10 border border-emerald-500/20 dark:border-emerald-500/20 px-3.5 py-2 rounded-xl flex-row items-center"
                                     >
                                         <Ionicons name="pricetag-outline" size={10} color="#10b981" style={{ marginRight: 6 }} />
-                                        <Text className="text-emerald-300 text-xs font-bold">
+                                        <Text className="text-emerald-600 dark:text-emerald-300 text-xs font-bold">
                                             {cat.name}
                                         </Text>
                                     </View>
@@ -506,12 +509,12 @@ export default function WorkerProfileScreen() {
                     {/* Service Areas */}
                     {profile.serviceAreas?.length > 0 && (
                         <View className="gap-y-2">
-                            <Text className="text-white font-extrabold text-base">Service Areas</Text>
-                            <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-y-3 shadow-sm">
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base">Service Areas</Text>
+                            <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 gap-y-3 shadow-sm">
                                 {profile.serviceAreas.map((area, idx) => (
                                     <View key={idx} className="flex-row items-center">
                                         <Ionicons name="navigate-outline" size={14} color="#6366f1" />
-                                        <Text className="text-slate-300 text-xs font-semibold ml-3">
+                                        <Text className="text-slate-700 dark:text-slate-300 text-xs font-semibold ml-3">
                                             {area.area}, {area.city} ({area.state})
                                         </Text>
                                     </View>
@@ -521,12 +524,12 @@ export default function WorkerProfileScreen() {
                     )}
 
                     {/* Physical Address */}
-                    {profile.address && (
+                    {!!profile.address && (
                         <View className="gap-y-2">
-                            <Text className="text-white font-extrabold text-base">Location Address</Text>
-                            <View className="flex-row items-start bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
-                                <Ionicons name="location-outline" size={18} color="#94a3b8" style={{ marginTop: 2 }} />
-                                <Text className="text-slate-300 text-sm ml-3 flex-1 leading-relaxed">
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-base">Location Address</Text>
+                            <View className="flex-row items-start bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
+                                <Ionicons name="location-outline" size={18} color="#64748b" style={{ marginTop: 2 }} />
+                                <Text className="text-slate-700 dark:text-slate-300 text-sm ml-3 flex-1 leading-relaxed">
                                     {profile.address}
                                 </Text>
                             </View>
@@ -534,16 +537,16 @@ export default function WorkerProfileScreen() {
                     )}
 
                     {/* Customer Reviews Section */}
-                    <View className="gap-y-4 border-t border-slate-900 pt-6 mt-2">
+                    <View className="gap-y-4 border-t border-slate-200 dark:border-slate-900 pt-6 mt-2">
                         <View className="flex-row justify-between items-center">
                             <View>
-                                <Text className="text-white font-extrabold text-base">Reviews & Ratings</Text>
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-base">Reviews & Ratings</Text>
                                 <View className="flex-row items-center mt-1">
                                     <Ionicons name="star" size={14} color="#f59e0b" />
-                                    <Text className="text-white text-xs font-bold ml-1">
+                                    <Text className="text-slate-900 dark:text-white text-xs font-bold ml-1">
                                         {profile.averageRating > 0 ? profile.averageRating.toFixed(1) : "New"}
                                     </Text>
-                                    <Text className="text-slate-400 text-[10px] font-semibold ml-1">
+                                    <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold ml-1">
                                         ({reviews.length} reviews)
                                     </Text>
                                 </View>
@@ -564,9 +567,9 @@ export default function WorkerProfileScreen() {
                         {isReviewsLoading ? (
                             <ActivityIndicator size="small" color="#6366f1" className="py-4" />
                         ) : reviews.length === 0 ? (
-                            <View className="bg-slate-900 border border-slate-800 rounded-xl p-4 items-center justify-center">
+                            <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 items-center justify-center">
                                 <Ionicons name="chatbox-outline" size={24} color="#64748b" />
-                                <Text className="text-slate-400 text-xs mt-2 font-medium text-center">
+                                <Text className="text-slate-500 dark:text-slate-400 text-xs mt-2 font-medium text-center">
                                     No reviews yet. Be the first to share your experience!
                                 </Text>
                             </View>
@@ -580,27 +583,27 @@ export default function WorkerProfileScreen() {
                                     return (
                                         <View
                                             key={rev._id}
-                                            className="bg-slate-900 border border-slate-800 rounded-xl p-4 gap-y-2"
+                                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 gap-y-2"
                                         >
                                             <View className="flex-row justify-between items-start">
                                                 <View className="flex-row items-center">
-                                                    <View className="w-8 h-8 rounded-full bg-slate-800 items-center justify-center border border-slate-700">
-                                                        <Text className="text-white font-bold text-xs uppercase">
+                                                    <View className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 items-center justify-center border border-slate-200 dark:border-slate-700">
+                                                        <Text className="text-slate-800 dark:text-white font-bold text-xs uppercase">
                                                             {getInitials(custName)}
                                                         </Text>
                                                     </View>
                                                     <View className="ml-3">
-                                                        <Text className="text-white font-bold text-sm">
+                                                        <Text className="text-slate-900 dark:text-white font-bold text-sm">
                                                             {custName}
                                                         </Text>
-                                                        <Text className="text-slate-400 text-[10px] font-semibold mt-0.5">
+                                                        <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold mt-0.5">
                                                             {new Date(rev.createdAt).toLocaleDateString()}
                                                         </Text>
                                                     </View>
                                                 </View>
 
                                                 <View className="flex-row items-center space-x-2">
-                                                    <View className="flex-row items-center bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                                                    <View className="flex-row items-center bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
                                                         <Text className="text-amber-400 text-xs font-bold mr-1">
                                                             {rev.rating}
                                                         </Text>
@@ -619,7 +622,7 @@ export default function WorkerProfileScreen() {
                                             </View>
 
                                             {rev.reviewText ? (
-                                                <Text className="text-slate-300 text-xs mt-1 leading-relaxed">
+                                                <Text className="text-slate-700 dark:text-slate-300 text-xs mt-1 leading-relaxed">
                                                     {rev.reviewText}
                                                 </Text>
                                             ) : null}
@@ -633,7 +636,7 @@ export default function WorkerProfileScreen() {
             </ScrollView>
 
             {/* Action Footer */}
-            <View className="p-5 border-t border-slate-900 bg-slate-950 flex-row space-x-4">
+            <View className="p-5 border-t border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950 flex-row space-x-4">
                 <TouchableOpacity
                     onPress={handleWhatsApp}
                     className="flex-1 bg-indigo-600 flex-row items-center justify-center py-4 rounded-xl space-x-2 shadow-lg shadow-indigo-500/20 active:opacity-90"
@@ -646,9 +649,9 @@ export default function WorkerProfileScreen() {
             {/* Write Review Modal / Overlay Drawer */}
             {showReviewModal && (
                 <View className="absolute inset-0 bg-black/70 justify-center items-center px-6 z-50">
-                    <View className="bg-slate-900 border border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
+                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white font-extrabold text-lg">Write a Review</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Write a Review</Text>
                             <TouchableOpacity onPress={() => setShowReviewModal(false)} className="p-1">
                                 <Ionicons name="close" size={24} color="#94a3b8" />
                             </TouchableOpacity>
@@ -656,7 +659,7 @@ export default function WorkerProfileScreen() {
 
                         {/* Star Rating Selectors */}
                         <View className="items-center py-2">
-                            <Text className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Tap stars to rate</Text>
+                            <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-2">Tap stars to rate</Text>
                             <View className="flex-row gap-x-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <TouchableOpacity
@@ -676,9 +679,9 @@ export default function WorkerProfileScreen() {
 
                         {/* Review Comment Input */}
                         <View className="gap-y-1.5">
-                            <Text className="text-slate-300 font-semibold text-sm">Your Experience (Optional)</Text>
+                            <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Your Experience (Optional)</Text>
                             <TextInput
-                                className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm min-h-[100]"
+                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-800 dark:text-white text-sm min-h-[100]"
                                 placeholder="Tell us what you liked or how they can improve..."
                                 placeholderTextColor="#64748b"
                                 multiline
@@ -692,9 +695,9 @@ export default function WorkerProfileScreen() {
                         <View className="flex-row gap-x-4 mt-2">
                             <TouchableOpacity
                                 onPress={() => setShowReviewModal(false)}
-                                className="flex-1 bg-slate-800 py-3 rounded-xl items-center"
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center"
                             >
-                                <Text className="text-slate-300 font-bold">Cancel</Text>
+                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleSubmitReview}
@@ -715,15 +718,15 @@ export default function WorkerProfileScreen() {
             {/* Report Profile Modal */}
             {showReportModal && (
                 <View className="absolute inset-0 bg-black/70 justify-center items-center px-6 z-50">
-                    <View className="bg-slate-900 border border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
+                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white font-extrabold text-lg">Report Profile</Text>
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Report Profile</Text>
                             <TouchableOpacity onPress={() => setShowReportModal(false)} className="p-1">
                                 <Ionicons name="close" size={24} color="#94a3b8" />
                             </TouchableOpacity>
                         </View>
 
-                        <Text className="text-slate-400 text-xs font-semibold leading-relaxed">
+                        <Text className="text-slate-500 dark:text-slate-400 text-xs font-semibold leading-relaxed">
                             {"Please select a reason for reporting this profile. Abusive reporting may result in account suspension."}
                         </Text>
 
@@ -740,7 +743,7 @@ export default function WorkerProfileScreen() {
                                     onPress={() => setReportReason(reasonText)}
                                     className={`px-4 py-3 rounded-xl border flex-row items-center active:opacity-90 ${reportReason === reasonText
                                             ? "bg-rose-500/10 border-rose-500"
-                                            : "bg-slate-950 border-slate-800"
+                                            : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                                         }`}
                                 >
                                     <Ionicons
@@ -748,7 +751,7 @@ export default function WorkerProfileScreen() {
                                         size={14}
                                         color={reportReason === reasonText ? "#f43f5e" : "#64748b"}
                                     />
-                                    <Text className={`text-xs font-semibold ml-3 ${reportReason === reasonText ? "text-rose-400" : "text-slate-300"}`}>
+                                    <Text className={`text-xs font-semibold ml-3 ${reportReason === reasonText ? "text-rose-400" : "text-slate-600 dark:text-slate-300"}`}>
                                         {reasonText}
                                     </Text>
                                 </TouchableOpacity>
@@ -759,9 +762,9 @@ export default function WorkerProfileScreen() {
                         <View className="flex-row gap-x-4 mt-2">
                             <TouchableOpacity
                                 onPress={() => setShowReportModal(false)}
-                                className="flex-1 bg-slate-800 py-3 rounded-xl items-center"
+                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center"
                             >
-                                <Text className="text-slate-300 font-bold">Cancel</Text>
+                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleSubmitReport}

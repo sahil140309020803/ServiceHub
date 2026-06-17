@@ -1,5 +1,7 @@
 import ContactClick from "../models/ContactClick.js";
 import WorkerProfile from "../models/WorkerProfile.js";
+import Favorite from "../models/Favorite.js";
+import ProfileView from "../models/ProfileView.js";
 
 /**
  * Log a customer contact click (Call or WhatsApp)
@@ -70,16 +72,85 @@ export const getContactStats = async (req, res) => {
 
         const workerId = profile._id;
 
+        // Define start of today (local time midnight)
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
         // Group queries
         const totalClicks = await ContactClick.countDocuments({ workerId });
         const whatsappClicks = await ContactClick.countDocuments({ workerId, contactType: "whatsapp" });
         const callClicks = await ContactClick.countDocuments({ workerId, contactType: "call" });
 
-        // Retrieve last 10 click records with customer details if authenticated
+        // Today's clicks
+        const whatsappClicksToday = await ContactClick.countDocuments({ 
+            workerId, 
+            contactType: "whatsapp", 
+            createdAt: { $gte: startOfToday } 
+        });
+        const callClicksToday = await ContactClick.countDocuments({ 
+            workerId, 
+            contactType: "call", 
+            createdAt: { $gte: startOfToday } 
+        });
+
+        // Favorites stats
+        const totalFavorites = await Favorite.countDocuments({ workerId });
+        const favoritesToday = await Favorite.countDocuments({ 
+            workerId, 
+            createdAt: { $gte: startOfToday } 
+        });
+
+        // Retrieve last 30 click records with customer details
         const recentClicks = await ContactClick.find({ workerId })
             .populate("customerId", "fullName email phoneNumber")
             .sort({ createdAt: -1 })
-            .limit(10);
+            .limit(30);
+
+        // Retrieve last 30 favorites records
+        const recentFavorites = await Favorite.find({ workerId })
+            .populate("customerId", "fullName email phoneNumber")
+            .sort({ createdAt: -1 })
+            .limit(30);
+
+        // Construct unified chronological activity list
+        const activities = [];
+
+        recentClicks.forEach(click => {
+            const customerName = click.customerId?.fullName || "A customer";
+            activities.push({
+                _id: click._id,
+                type: click.contactType, // "whatsapp" | "call"
+                text: `${customerName} clicked your ${click.contactType === "whatsapp" ? "WhatsApp" : "Phone Call"}`,
+                createdAt: click.createdAt,
+            });
+        });
+
+        recentFavorites.forEach(fav => {
+            const customerName = fav.customerId?.fullName || "A customer";
+            activities.push({
+                _id: fav._id,
+                type: "favorite",
+                text: `${customerName} added you to favourites`,
+                createdAt: fav.createdAt,
+            });
+        });
+
+        // Retrieve last 30 profile views dynamically
+        const recentViews = await ProfileView.find({ workerId })
+            .sort({ createdAt: -1 })
+            .limit(30);
+
+        recentViews.forEach(view => {
+            activities.push({
+                _id: view._id,
+                type: "view",
+                text: "Someone viewed your profile",
+                createdAt: view.createdAt,
+            });
+        });
+
+        // Sort activities by createdAt desc
+        activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         return res.status(200).json({
             success: true,
@@ -88,7 +159,12 @@ export const getContactStats = async (req, res) => {
                 totalClicks,
                 whatsappClicks,
                 callClicks,
+                whatsappClicksToday,
+                callClicksToday,
+                totalFavorites,
+                favoritesToday,
                 recentClicks,
+                activities,
             },
         });
     } catch (error) {

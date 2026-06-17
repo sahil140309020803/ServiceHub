@@ -2,10 +2,13 @@ import { useEffect } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import useAuthStore from "../src/store/useAuthStore";
+import { useColorScheme } from "nativewind";
+import storage from "../src/utils/storage";
 import "@/global.css";
 
 export default function RootLayout() {
   const { token, isLoading, loadUser, user, profileCompleted } = useAuthStore();
+  const { setColorScheme } = useColorScheme();
   const segments = useSegments();
   const router = useRouter();
 
@@ -13,6 +16,40 @@ export default function RootLayout() {
   useEffect(() => {
     loadUser();
   }, []);
+
+  // Synchronize user-specific or global theme state
+  useEffect(() => {
+    if (isLoading) return;
+    const syncTheme = async () => {
+      try {
+        let activeTheme = "dark";
+        if (user && user._id) {
+          const savedUserTheme = await storage.getItem(`theme_user_${user._id}`);
+          if (savedUserTheme === "light" || savedUserTheme === "dark") {
+            activeTheme = savedUserTheme;
+          } else {
+            // Check if global theme exists
+            const savedGlobalTheme = await storage.getItem("theme");
+            if (savedGlobalTheme === "light" || savedGlobalTheme === "dark") {
+              activeTheme = savedGlobalTheme;
+            }
+            // Save it for this user so it persists
+            await storage.setItem(`theme_user_${user._id}`, activeTheme);
+          }
+        } else {
+          const savedTheme = await storage.getItem("theme");
+          if (savedTheme === "light" || savedTheme === "dark") {
+            activeTheme = savedTheme;
+          }
+        }
+        setColorScheme(activeTheme as "light" | "dark");
+      } catch (err) {
+        console.error("Failed to load saved theme:", err);
+        setColorScheme("dark");
+      }
+    };
+    syncTheme();
+  }, [user, isLoading]);
 
   // Handle authentication navigation gate
   useEffect(() => {

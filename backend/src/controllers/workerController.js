@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import WorkerProfile from "../models/WorkerProfile.js";
 import User from "../models/User.js";
+import ProfileView from "../models/ProfileView.js";
 
 // Helper for distance calculations (Haversine formula)
 const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -169,6 +170,16 @@ export const getWorkerById = async (req, res) => {
         // Increment profile views
         profile.profileViews = (profile.profileViews || 0) + 1;
         await profile.save();
+
+        // Log ProfileView record asynchronously
+        try {
+            await ProfileView.create({
+                workerId,
+                customerId: req.user ? req.user._id : null
+            });
+        } catch (err) {
+            console.error("Failed to log profile view record:", err);
+        }
 
         return res.status(200).json({
             success: true,

@@ -12,6 +12,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
 import useAuthStore from "../../src/store/useAuthStore";
 import {
     getGalleryDetails,
@@ -26,6 +27,8 @@ export default function GalleryDetailsScreen() {
     const router = useRouter();
     const { galleryId } = useLocalSearchParams();
     const { user } = useAuthStore();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === "dark";
 
     const [item, setItem] = useState(null);
     const [isOwner, setIsOwner] = useState(false);
@@ -149,7 +152,7 @@ export default function GalleryDetailsScreen() {
 
     if (isLoading) {
         return (
-            <SafeAreaView className="flex-1 bg-slate-950 justify-center items-center">
+            <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950 justify-center items-center">
                 <ActivityIndicator size="large" color="#6366f1" />
             </SafeAreaView>
         );
@@ -157,9 +160,9 @@ export default function GalleryDetailsScreen() {
 
     if (!item) {
         return (
-            <SafeAreaView className="flex-1 bg-slate-950 justify-center items-center px-6">
+            <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950 justify-center items-center px-6">
                 <Ionicons name="alert-circle-outline" size={48} color="#f43f5e" />
-                <Text className="text-white text-base font-bold mt-4 text-center">
+                <Text className="text-slate-900 dark:text-white text-base font-bold mt-4 text-center">
                     Project photo not found
                 </Text>
                 <TouchableOpacity
@@ -173,8 +176,8 @@ export default function GalleryDetailsScreen() {
     }
 
     return (
-        <View className="flex-1 bg-slate-950">
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+        <View className="flex-1 bg-slate-100 dark:bg-slate-950">
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} translucent backgroundColor="transparent" />
 
             {/* Immersive Full Screen Photo View */}
             <View className="absolute inset-0 w-full h-full justify-center items-center">
@@ -189,9 +192,9 @@ export default function GalleryDetailsScreen() {
             <View className="absolute top-12 left-5 right-5 z-50 flex-row justify-between items-center">
                 <TouchableOpacity
                     onPress={() => router.back()}
-                    className="w-10 h-10 bg-slate-950/60 border border-slate-800/80 rounded-full items-center justify-center"
+                    className="w-10 h-10 bg-white/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 rounded-full items-center justify-center shadow-sm"
                 >
-                    <Ionicons name="arrow-back" size={20} color="white" />
+                    <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#0f172a"} />
                 </TouchableOpacity>
 
                 {/* Delete button (owner only) */}
@@ -213,13 +216,13 @@ export default function GalleryDetailsScreen() {
             </View>
 
             {/* Floating Details Overlay Card */}
-            <View className="absolute bottom-10 left-5 right-5 z-50 bg-slate-900/90 border border-slate-850 rounded-[28px] p-5 shadow-xl shadow-slate-950/50">
+            <View className="absolute bottom-10 left-5 right-5 z-50 bg-white/95 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-[28px] p-5 shadow-xl shadow-slate-900/10 dark:shadow-slate-950/50">
                 <View className="flex-row justify-between items-start">
                     <View className="flex-1 mr-4">
-                        <Text className="text-white font-black text-lg leading-tight">
+                        <Text className="text-slate-900 dark:text-white font-black text-lg leading-tight">
                             {item.title || "Untitled Project"}
                         </Text>
-                        <Text className="text-slate-500 text-[10px] font-bold mt-1">
+                        <Text className="text-slate-500 dark:text-slate-400 text-[10px] font-bold mt-1">
                             Uploaded on {new Date(item.createdAt).toLocaleDateString()}
                         </Text>
                     </View>
@@ -229,22 +232,22 @@ export default function GalleryDetailsScreen() {
                         onPress={handleToggleLike}
                         className={`w-11 h-11 rounded-full items-center justify-center border transition-all ${hasLiked
                                 ? "bg-rose-500/10 border-rose-500/30"
-                                : "bg-slate-950 border border-slate-850"
+                                : "bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
                             }`}
                     >
                         <Ionicons
                             name={hasLiked ? "heart" : "heart-outline"}
                             size={20}
-                            color={hasLiked ? "#f43f5e" : "#94a3b8"}
+                            color={hasLiked ? "#f43f5e" : (isDark ? "#94a3b8" : "#64748b")}
                         />
                     </TouchableOpacity>
                 </View>
 
                 {/* Description Scrollbox */}
                 {item.description ? (
-                    <View className="mt-3.5 border-t border-slate-850/45 pt-3.5">
+                    <View className="mt-3.5 border-t border-slate-200 dark:border-slate-800/45 pt-3.5">
                         <ScrollView style={{ maxHeight: 75 }} showsVerticalScrollIndicator={false}>
-                            <Text className="text-slate-300 text-xs leading-relaxed">
+                            <Text className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed">
                                 {item.description}
                             </Text>
                         </ScrollView>
@@ -252,16 +255,16 @@ export default function GalleryDetailsScreen() {
                 ) : null}
 
                 {/* Stats Footer Row */}
-                <View className="flex-row justify-start items-center space-x-3 mt-4 pt-3 border-t border-slate-850/45">
-                    <View className="flex-row items-center bg-slate-950/60 border border-slate-850 px-2.5 py-1 rounded-lg">
+                <View className="flex-row justify-start items-center space-x-3 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800/45">
+                    <View className="flex-row items-center bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 px-2.5 py-1 rounded-lg">
                         <Ionicons name="eye-outline" size={11} color="#6366f1" />
-                        <Text className="text-slate-400 text-[9px] font-bold ml-1">
+                        <Text className="text-slate-600 dark:text-slate-400 text-[9px] font-bold ml-1">
                             {item.viewsCount || 0} views
                         </Text>
                     </View>
-                    <View className="flex-row items-center bg-slate-950/60 border border-slate-850 px-2.5 py-1 rounded-lg">
+                    <View className="flex-row items-center bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 px-2.5 py-1 rounded-lg">
                         <Ionicons name="heart-outline" size={11} color="#ef4444" />
-                        <Text className="text-slate-400 text-[9px] font-bold ml-1">
+                        <Text className="text-slate-600 dark:text-slate-400 text-[9px] font-bold ml-1">
                             {item.likesCount || 0} likes
                         </Text>
                     </View>
