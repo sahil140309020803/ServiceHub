@@ -20,6 +20,7 @@ import api from "../../src/services/api";
 const { width } = Dimensions.get("window");
 // Compute item width: padding-horizontal = 20, gap = 8
 const ITEM_WIDTH = (width - 40 - 16) / 3;
+const ITEM_HEIGHT = 160;
 
 export default function GalleryScreen() {
     const router = useRouter();
@@ -69,8 +70,8 @@ export default function GalleryScreen() {
             <TouchableOpacity
                 onPress={() => router.push(`/worker/GalleryDetailsScreen?galleryId=${item._id}`)}
                 activeOpacity={0.9}
-                style={{ width: ITEM_WIDTH, height: ITEM_WIDTH }}
-                className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden mr-2 mb-2 relative border border-slate-200 dark:border-slate-800 shadow-sm"
+                style={{ width: ITEM_WIDTH, height: ITEM_HEIGHT }}
+                className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden mr-3 mb-3 relative border border-slate-200 dark:border-slate-800 shadow-sm"
             >
                 <Image
                     source={{ uri: item.imageUrl }}
@@ -79,16 +80,16 @@ export default function GalleryScreen() {
                 />
 
                 {/* Visual Stats Bottom Bar Overlay */}
-                <View className="absolute bottom-0 left-0 right-0 bg-black/60 px-1.5 py-1 flex-row items-center justify-between">
+                <View className="absolute bottom-0 left-0 right-0 bg-black/60 px-2.5 py-1.5 flex-row items-center justify-between">
                     <View className="flex-row items-center space-x-0.5">
-                        <Ionicons name="eye" size={9} color="#94a3b8" />
-                        <Text className="text-[8px] font-extrabold text-slate-300 ml-0.5">
+                        <Ionicons name="eye" size={11} color="#94a3b8" />
+                        <Text className="text-[10px] font-extrabold text-slate-300 ml-0.5">
                             {item.viewsCount || 0}
                         </Text>
                     </View>
                     <View className="flex-row items-center space-x-0.5">
-                        <Ionicons name="heart" size={9} color="#ef4444" />
-                        <Text className="text-[8px] font-extrabold text-slate-300 ml-0.5">
+                        <Ionicons name="heart" size={11} color="#ef4444" />
+                        <Text className="text-[10px] font-extrabold text-slate-300 ml-0.5">
                             {item.likesCount || 0}
                         </Text>
                     </View>
@@ -111,10 +112,10 @@ export default function GalleryScreen() {
                 {/* Add Work Button */}
                 <TouchableOpacity
                     onPress={() => router.push("/worker/AddWorkScreen")}
-                    className="bg-indigo-600 px-3 py-2 rounded-xl flex-row items-center gap-1.5 active:opacity-90 shadow-lg shadow-indigo-600/20"
+                    className="bg-indigo-600 px-4 py-2 rounded-xl flex-row items-center gap-1 active:opacity-90 shadow-lg shadow-indigo-600/20"
                 >
                     <Ionicons name="add" size={18} color="white" />
-                    <Text className="text-white font-bold text-xs">Add Work</Text>
+                    <Text className="text-white font-bold text-sm w-[4rem]">Add Work</Text>
                 </TouchableOpacity>
             </View>
 

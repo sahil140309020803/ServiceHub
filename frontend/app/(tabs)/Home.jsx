@@ -367,6 +367,10 @@ export default function HomeDashboard() {
         }
     }, [location]);
 
+    if (!user) {
+        return null;
+    }
+
     // Action when user saves address
     const handleSaveAddressProceed = async () => {
         if (!tempResolvedLocation) return;

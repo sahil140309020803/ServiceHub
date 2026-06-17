@@ -20,6 +20,11 @@ import useAuthStore from "../../src/store/useAuthStore";
 
 export default function FavoritesScreen() {
     const { user } = useAuthStore();
+
+    if (!user) {
+        return null;
+    }
+
     const isWorker = user?.role === "worker" || user?.role === "admin";
 
     if (isWorker) {

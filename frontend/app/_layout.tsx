@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import useAuthStore from "../src/store/useAuthStore";
 import { useColorScheme } from "nativewind";
 import storage from "../src/utils/storage";
+import Toast from "react-native-toast-message";
+import { toastConfig } from "../config/toastConfig";
 import "@/global.css";
 
 export default function RootLayout() {
@@ -12,9 +14,15 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
   // Load user profile on initial mount
   useEffect(() => {
-    loadUser();
+    const checkUser = async () => {
+      await loadUser();
+      setIsInitialLoading(false);
+    };
+    checkUser();
   }, []);
 
   // Synchronize user-specific or global theme state
@@ -22,7 +30,7 @@ export default function RootLayout() {
     if (isLoading) return;
     const syncTheme = async () => {
       try {
-        let activeTheme = "dark";
+        let activeTheme = "light";
         if (user && user._id) {
           const savedUserTheme = await storage.getItem(`theme_user_${user._id}`);
           if (savedUserTheme === "light" || savedUserTheme === "dark") {
@@ -91,7 +99,7 @@ export default function RootLayout() {
     }
   }, [token, isLoading, segments, user, profileCompleted]);
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-slate-900">
         <ActivityIndicator size="large" color="#6366f1" />
@@ -100,11 +108,18 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="register" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+      <Toast
+        config={toastConfig}
+        position="top"
+        topOffset={60}
+      />
+    </>
   );
 }

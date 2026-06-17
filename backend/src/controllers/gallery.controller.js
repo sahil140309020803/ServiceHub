@@ -119,6 +119,7 @@ export const getWorkerGallery = async (req, res) => {
         const { workerId } = req.params;
         const galleryItems = await WorkGallery.find({ workerId }).sort({ createdAt: -1 });
 
+
         return res.status(200).json({
             success: true,
             data: galleryItems

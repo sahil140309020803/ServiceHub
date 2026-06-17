@@ -207,6 +207,10 @@ export default function ManageWorkerProfileScreen() {
         return () => clearTimeout(delayDebounce);
     }, [locationSearch]);
 
+    if (!user) {
+        return null;
+    }
+
     // Handle suggestion select
     const handleSelectSuggestion = (suggestion) => {
         setAddress(suggestion.display_name);

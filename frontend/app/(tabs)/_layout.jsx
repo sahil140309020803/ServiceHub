@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import useAuthStore from "../../src/store/useAuthStore";
@@ -8,7 +8,21 @@ export default function TabsLayout() {
     const { user } = useAuthStore();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
-    const isWorker = user?.role === "worker" || user?.role === "admin";
+
+    // Stabilize isWorker during logout to prevent React Navigation from mutating 
+    // the tab configuration while screens are unmounting.
+    const [isWorker, setIsWorker] = useState(() => {
+        if (user) {
+            return user.role === "worker" || user.role === "admin";
+        }
+        return false;
+    });
+
+    useEffect(() => {
+        if (user) {
+            setIsWorker(user.role === "worker" || user.role === "admin");
+        }
+    }, [user]);
 
     return (
         <Tabs

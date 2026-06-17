@@ -67,6 +67,10 @@ export default function EditProfileScreen() {
         }
     });
 
+    if (!user) {
+        return null;
+    }
+
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {

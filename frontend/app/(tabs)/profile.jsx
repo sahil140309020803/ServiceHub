@@ -25,6 +25,10 @@ export default function ProfileScreen() {
     const router = useRouter();
     const isFocused = useIsFocused();
 
+    if (!user) {
+        return null;
+    }
+
     const isWorker = user?.role === "worker" || user?.role === "admin";
 
     if (isWorker) {

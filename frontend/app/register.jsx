@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
+    Image,
     Text,
     TextInput,
     TouchableOpacity,
@@ -8,7 +9,8 @@ import {
     StatusBar,
     KeyboardAvoidingView,
     Platform,
-    ScrollView
+    ScrollView,
+    Animated
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
@@ -16,7 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
+import Toast from "react-native-toast-message";
 import useAuthStore from "../src/store/useAuthStore";
 
 // Registration validation schema
@@ -40,19 +42,105 @@ const registerSchema = z.object({
     role: z.enum(["customer", "worker"]),
 });
 
+// Reusable Floating Label Input Component
+function FloatingLabelInput({
+    label,
+    value,
+    onChangeText,
+    onBlur,
+    secureTextEntry,
+    keyboardType,
+    autoCapitalize,
+    icon,
+    hasError,
+    showPasswordToggle,
+    onPasswordTogglePress,
+    passwordVisibility
+}) {
+    const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
+    const [isFocused, setIsFocused] = useState(false);
+
+    useEffect(() => {
+        Animated.timing(animatedValue, {
+            toValue: (isFocused || value) ? 1 : 0,
+            duration: 150,
+            useNativeDriver: false,
+        }).start();
+    }, [isFocused, value, animatedValue]);
+
+    const labelStyle = {
+        position: "absolute",
+        left: 44,
+        top: 17,
+        zIndex: 10,
+        paddingHorizontal: 2.5,
+        backgroundColor: "white",
+        fontSize: animatedValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [15, 11]
+        }),
+        transform: [
+            {
+                translateY: animatedValue.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -27]
+                })
+            }
+        ],
+        color: animatedValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: ["#94a3b8", hasError ? "#ef4444" : (isFocused ? "#1a73e8" : "#64748b")]
+        })
+    };
+
+    return (
+        <View className="relative w-full mb-1">
+            <Animated.Text style={labelStyle} pointerEvents="none">
+                {label}
+            </Animated.Text>
+
+            <View className={`h-14 rounded-xl border flex-row items-center px-4 bg-white ${hasError ? "border-rose-500" : (isFocused ? "border-[#1a73e8]" : "border-slate-200")
+                }`}>
+                <Ionicons name={icon} size={18} color="#94a3b8" />
+                <TextInput
+                    value={value}
+                    onChangeText={onChangeText}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => {
+                        setIsFocused(false);
+                        if (onBlur) onBlur();
+                    }}
+                    secureTextEntry={secureTextEntry}
+                    keyboardType={keyboardType}
+                    autoCapitalize={autoCapitalize}
+                    className="flex-1 ml-3 items-center text-slate-700 font-semibold h-full"
+                    style={{ includeFontPadding: false }}
+                />
+                {showPasswordToggle && (
+                    <TouchableOpacity onPress={onPasswordTogglePress} className="p-1">
+                        <Ionicons
+                            name={passwordVisibility ? "eye-off-outline" : "eye-outline"}
+                            size={18}
+                            color="#94a3b8"
+                        />
+                    </TouchableOpacity>
+                )}
+            </View>
+        </View>
+    );
+}
+
 export default function RegisterScreen() {
     const router = useRouter();
     const { register, isLoading, error: serverError, clearError } = useAuthStore();
     const [showPassword, setShowPassword] = useState(false);
-    
-    const { colorScheme } = useColorScheme();
-    const isDark = colorScheme === "dark";
 
     // Clear server errors when screen mounts
     useEffect(() => {
         clearError();
-    }, []);
+    }, [clearError]);
 
+    // Form initialization
     const {
         control,
         handleSubmit,
@@ -66,238 +154,310 @@ export default function RegisterScreen() {
             email: "",
             phoneNumber: "",
             password: "",
-            role: "customer" // default role
+            role: "customer"
         }
     });
 
     const selectedRole = watch("role");
+    const firstErrorField = ["fullName", "email", "phoneNumber", "password"].find(field => errors[field]);
+
+    // Trigger toast on server side errors
+    useEffect(() => {
+        if (serverError) {
+            Toast.show({
+                type: "error",
+                text1: serverError,
+                position: "top"
+            });
+            clearError();
+        }
+    }, [serverError, clearError]);
 
     const onSubmit = async (data) => {
-        await register(
-            data.fullName,
-            data.email,
-            data.phoneNumber,
-            data.password,
-            data.role
-        );
+        try {
+            const success = await register(
+                data.fullName,
+                data.email,
+                data.phoneNumber,
+                data.password,
+                data.role
+            );
+            if (success) {
+                Toast.show({
+                    type: "success",
+                    text1: "Registration Successful",
+                    text2: "Welcome to ServiceHub! 🎉",
+                });
+            }
+        } catch (error) {
+            Toast.show({
+                type: "error",
+                text1: error || "Registration Failed",
+            });
+        }
+
+    };
+
+    // Callback on client side validation error - show first error message in Toast
+    const onError = (errors) => {
+        const errorOrder = ["fullName", "email", "phoneNumber", "password"];
+        const firstField = errorOrder.find(field => errors[field]);
+
+        if (firstField && errors[firstField]) {
+            Toast.show({
+                type: "error",
+                text1: errors[firstField].message,
+                position: "top"
+            });
+        }
+    };
+
+    const handleGoogleSignUp = () => {
+        Toast.show({
+            type: "info",
+            text1: "Under Maintenance...",
+            position: "top"
+        });
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-950">
-            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+        <SafeAreaView className="flex-1 bg-white">
+            <StatusBar barStyle="dark-content" backgroundColor="white" />
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 className="flex-1"
             >
-                <ScrollView 
+                <ScrollView
                     contentContainerStyle={{ flexGrow: 1 }}
                     keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                 >
-                    <View className="flex-1 justify-between px-6 py-6">
-                        {/* Header */}
-                        <View>
-                            <TouchableOpacity
-                                onPress={() => router.replace("/")}
-                                className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full items-center justify-center border border-slate-200 dark:border-slate-800 mb-6 active:opacity-80"
-                            >
-                                <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#0f172a"} />
-                            </TouchableOpacity>
-
-                            <Text className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                                Create Account
+                    <View className="flex-1 justify-between px-6 py-6 bg-white">
+                        {/* Header Title Section */}
+                        <View className="items-center mt-4">
+                            <Text className="text-3xl font-black text-slate-900 tracking-tight text-center">
+                                Create Your <Text className="text-[#1a73e8]">Account</Text>
                             </Text>
-                            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-1.5">
-                                Join ServiceHub today and connect with trusted local professionals.
+                            <Text className="text-slate-500 text-sm font-semibold text-center mt-2">
+                                Join and connect with trusted professionals near you.
                             </Text>
                         </View>
 
-                        {/* Form Body */}
-                        <View className="my-6 gap-y-4">
-                            {/* Server-Side Errors */}
-                            {!!serverError && (
-                                <View className="bg-rose-500/10 border border-rose-500/20 p-3 rounded-lg flex-row items-center">
-                                    <Ionicons name="alert-circle" size={20} color="#f43f5e" />
-                                    <Text className="text-rose-600 dark:text-rose-400 text-sm font-medium ml-2 flex-1">
-                                        {serverError}
-                                    </Text>
-                                </View>
-                            )}
+                        {/* Google Social Button */}
+                        <TouchableOpacity
+                            onPress={handleGoogleSignUp}
+                            activeOpacity={0.8}
+                            className="bg-white border border-slate-200/80 rounded-2xl h-14 flex-row items-center justify-center gap-3 mt-7 shadow-md shadow-slate-400"
+                        >
+                            <Image
+                                source={require('../assets/images/google.png')}
+                                style={{
+                                    width: 22,
+                                    height: 22,
+                                    resizeMode: 'contain',
+                                }}
+                            />
+                            <Text className="text-slate-800 font-bold ml-2.5">
+                                Continue with Google
+                            </Text>
+                        </TouchableOpacity>
 
-                            {/* Full Name Input */}
-                            <View className="gap-y-1.5">
-                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Full Name</Text>
-                                <Controller
-                                    control={control}
-                                    name="fullName"
-                                    render={({ field: { onChange, onBlur, value } }) => (
-                                        <View className={`flex-row items-center bg-white dark:bg-slate-900 border px-4 py-3 rounded-xl ${errors.fullName ? "border-rose-500" : "border-slate-200 dark:border-slate-800 focus:border-indigo-500"}`}>
-                                            <Ionicons name="person-outline" size={18} color="#94a3b8" />
-                                            <TextInput
-                                                className="flex-1 ml-3 text-slate-900 dark:text-white text-base"
-                                                placeholder="Enter full name"
-                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                                                onBlur={onBlur}
-                                                onChangeText={onChange}
-                                                value={value}
-                                            />
+                        {/* OR Divider */}
+                        <View className="flex-row items-center my-6">
+                            <View className="flex-1 h-[1px] bg-slate-100" />
+                            <Text className="text-slate-400 text-xs px-4 font-bold">OR</Text>
+                            <View className="flex-1 h-[1px] bg-slate-100" />
+                        </View>
+
+                        {/* Join As Cards */}
+                        <View className="mb-6">
+                            <Text className="text-slate-900 font-extrabold text-xs tracking-wide uppercase mb-3.5 pl-1">
+                                Join As
+                            </Text>
+
+                            <View className="flex-row justify-between">
+                                {/* Customer Card */}
+                                <TouchableOpacity
+                                    activeOpacity={0.9}
+                                    onPress={() => setValue("role", "customer")}
+                                    className={`w-[48%] h-36 rounded-2xl p-4 border relative flex-col justify-evenly  items-center ${selectedRole === "customer"
+                                        ? "border-[#1a73e8] bg-blue-50/10"
+                                        : "border-slate-200 bg-white"
+                                        }`}
+                                >
+                                    {selectedRole === "customer" && (
+                                        <View className="absolute top-2.5 right-2.5">
+                                            <Ionicons name="checkmark-circle" size={21} color="#1a73e8" />
                                         </View>
                                     )}
-                                />
-                                {errors.fullName && (
-                                    <Text className="text-rose-500 text-xs mt-0.5 font-medium">
-                                        {errors.fullName.message}
-                                    </Text>
-                                )}
-                            </View>
-
-                            {/* Email Input */}
-                            <View className="gap-y-1.5">
-                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Email Address</Text>
-                                <Controller
-                                    control={control}
-                                    name="email"
-                                    render={({ field: { onChange, onBlur, value } }) => (
-                                        <View className={`flex-row items-center bg-white dark:bg-slate-900 border px-4 py-3 rounded-xl ${errors.email ? "border-rose-500" : "border-slate-200 dark:border-slate-800 focus:border-indigo-500"}`}>
-                                            <Ionicons name="mail-outline" size={18} color="#94a3b8" />
-                                            <TextInput
-                                                className="flex-1 ml-3 text-slate-900 dark:text-white text-base"
-                                                placeholder="Enter email address"
-                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                                                keyboardType="email-address"
-                                                autoCapitalize="none"
-                                                onBlur={onBlur}
-                                                onChangeText={onChange}
-                                                value={value}
-                                            />
-                                        </View>
-                                    )}
-                                />
-                                {errors.email && (
-                                    <Text className="text-rose-500 text-xs mt-0.5 font-medium">
-                                        {errors.email.message}
-                                    </Text>
-                                )}
-                            </View>
-
-                            {/* Phone Number Input */}
-                            <View className="gap-y-1.5">
-                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Phone Number</Text>
-                                <Controller
-                                    control={control}
-                                    name="phoneNumber"
-                                    render={({ field: { onChange, onBlur, value } }) => (
-                                        <View className={`flex-row items-center bg-white dark:bg-slate-900 border px-4 py-3 rounded-xl ${errors.phoneNumber ? "border-rose-500" : "border-slate-200 dark:border-slate-800 focus:border-indigo-500"}`}>
-                                            <Ionicons name="call-outline" size={18} color="#94a3b8" />
-                                            <TextInput
-                                                className="flex-1 ml-3 text-slate-900 dark:text-white text-base"
-                                                placeholder="Enter phone number"
-                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                                                keyboardType="phone-pad"
-                                                onBlur={onBlur}
-                                                onChangeText={onChange}
-                                                value={value}
-                                            />
-                                        </View>
-                                    )}
-                                />
-                                {errors.phoneNumber && (
-                                    <Text className="text-rose-500 text-xs mt-0.5 font-medium">
-                                        {errors.phoneNumber.message}
-                                    </Text>
-                                )}
-                            </View>
-
-                            {/* Password Input */}
-                            <View className="gap-y-1.5">
-                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Password</Text>
-                                <Controller
-                                    control={control}
-                                    name="password"
-                                    render={({ field: { onChange, onBlur, value } }) => (
-                                        <View className={`flex-row items-center bg-white dark:bg-slate-900 border px-4 py-3 rounded-xl ${errors.password ? "border-rose-500" : "border-slate-200 dark:border-slate-800 focus:border-indigo-500"}`}>
-                                            <Ionicons name="lock-closed-outline" size={18} color="#94a3b8" />
-                                            <TextInput
-                                                className="flex-1 ml-3 text-slate-900 dark:text-white text-base"
-                                                placeholder="Enter password"
-                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                                                secureTextEntry={!showPassword}
-                                                autoCapitalize="none"
-                                                onBlur={onBlur}
-                                                onChangeText={onChange}
-                                                value={value}
-                                            />
-                                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                                <Ionicons
-                                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                                                    size={18}
-                                                    color="#94a3b8"
-                                                />
-                                            </TouchableOpacity>
-                                        </View>
-                                    )}
-                                />
-                                {errors.password && (
-                                    <Text className="text-rose-500 text-xs mt-0.5 font-medium">
-                                        {errors.password.message}
-                                    </Text>
-                                )}
-                            </View>
-
-                            {/* Role Selection Picker (Premium Custom Design) */}
-                            <View className="gap-y-2">
-                                <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">Join As</Text>
-                                <View className="flex-row gap-x-4">
-                                    <TouchableOpacity
-                                        onPress={() => setValue("role", "customer")}
-                                        className={`flex-1 py-3 px-4 rounded-xl border flex-row items-center justify-center space-x-2 ${selectedRole === "customer" ? "bg-indigo-600/10 border-indigo-500" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}
-                                    >
+                                    <View className={`w-14 h-14 rounded-full items-center justify-center ${selectedRole === "customer" ? "bg-blue-100/60" : "bg-slate-100"
+                                        }`}>
                                         <Ionicons
-                                            name="people"
-                                            size={18}
-                                            color={selectedRole === "customer" ? "#6366f1" : "#94a3b8"}
+                                            name="person-outline"
+                                            size={26}
+                                            color={selectedRole === "customer" ? "#1a73e8" : "#64748b"}
                                         />
-                                        <Text className={`font-semibold ml-2 text-sm ${selectedRole === "customer" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400"}`}>
+                                    </View>
+                                    <View className="flex flex-col justify-center items-center gap-0.5">
+                                        <Text className={`font-bold text-md ${selectedRole === "customer" ? "text-[#1a73e8]" : "text-slate-900"
+                                            }`}>
                                             Customer
                                         </Text>
-                                    </TouchableOpacity>
+                                        <Text className="text-slate-400 text-[10px] font-semibold">
+                                            Need home services
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
 
-                                    <TouchableOpacity
-                                        onPress={() => setValue("role", "worker")}
-                                        className={`flex-1 py-3 px-4 rounded-xl border flex-row items-center justify-center space-x-2 ${selectedRole === "worker" ? "bg-indigo-600/10 border-indigo-500" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}
-                                    >
+                                {/* Professional Card */}
+                                <TouchableOpacity
+                                    activeOpacity={0.9}
+                                    onPress={() => setValue("role", "worker")}
+                                    className={`w-[48%] h-36 rounded-2xl p-4 border relative flex-col justify-center gap-0.5 items-center ${selectedRole === "worker"
+                                        ? "border-[#1a73e8] bg-blue-50/10"
+                                        : "border-slate-200 bg-white"
+                                        }`}
+                                >
+                                    {selectedRole === "worker" && (
+                                        <View className="absolute top-2.5 right-2.5">
+                                            <Ionicons name="checkmark-circle" size={21} color="#1a73e8" />
+                                        </View>
+                                    )}
+                                    <View className={`w-14 h-14 rounded-full items-center justify-center ${selectedRole === "worker" ? "bg-blue-100/60" : "bg-slate-100"
+                                        }`}>
                                         <Ionicons
-                                            name="construct"
-                                            size={18}
-                                            color={selectedRole === "worker" ? "#6366f1" : "#94a3b8"}
+                                            name="briefcase-outline"
+                                            size={26}
+                                            color={selectedRole === "worker" ? "#1a73e8" : "#64748b"}
                                         />
-                                        <Text className={`font-semibold ml-2 text-sm ${selectedRole === "worker" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400"}`}>
+                                    </View>
+                                    <View className="flex flex-col justify-center items-center gap-0.5">
+                                        <Text className={`font-bold text-md ${selectedRole === "worker" ? "text-[#1a73e8]" : "text-slate-900"
+                                            }`}>
                                             Professional
                                         </Text>
-                                    </TouchableOpacity>
-                                </View>
+                                        <Text className="text-slate-400 text-[10px] font-semibold">
+                                            Provide home services
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
                             </View>
                         </View>
 
-                        {/* Register Action Buttons */}
-                        <View className="gap-y-4">
-                            <TouchableOpacity
-                                disabled={isLoading}
-                                onPress={handleSubmit(onSubmit)}
-                                className="bg-indigo-600 py-4 rounded-xl items-center justify-center shadow-lg shadow-indigo-500/30 active:opacity-90 disabled:opacity-70"
-                            >
-                                {isLoading ? (
-                                    <ActivityIndicator size="small" color="white" />
-                                ) : (
-                                    <Text className="text-white font-bold text-lg">Sign Up</Text>
+                        {/* Form Inputs (Floating labels) */}
+                        <View className="gap-y-4 mb-8">
+                            {/* Full Name Input */}
+                            <Controller
+                                control={control}
+                                name="fullName"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <FloatingLabelInput
+                                        label="Full Name"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        icon="person-outline"
+                                        hasError={firstErrorField === "fullName"}
+                                    />
                                 )}
-                            </TouchableOpacity>
+                            />
 
-                            <View className="flex-row justify-center items-center py-2 mb-4">
-                                <Text className="text-slate-500 dark:text-slate-400 text-sm">Already have an account?</Text>
-                                <TouchableOpacity onPress={() => router.replace("/login")}>
-                                    <Text className="text-indigo-600 dark:text-indigo-400 font-bold text-sm ml-1.5">Sign In</Text>
+                            {/* Email Input */}
+                            <Controller
+                                control={control}
+                                name="email"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <FloatingLabelInput
+                                        label="Email Address"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        icon="mail-outline"
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        hasError={firstErrorField === "email"}
+                                    />
+                                )}
+                            />
+
+                            {/* Mobile Number Input */}
+                            <Controller
+                                control={control}
+                                name="phoneNumber"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <FloatingLabelInput
+                                        label="Mobile Number"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        icon="call-outline"
+                                        keyboardType="phone-pad"
+                                        hasError={firstErrorField === "phoneNumber"}
+                                    />
+                                )}
+                            />
+
+                            {/* Password Input */}
+                            <Controller
+                                control={control}
+                                name="password"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <FloatingLabelInput
+                                        label="Create Password"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        icon="lock-closed-outline"
+                                        secureTextEntry={!showPassword}
+                                        autoCapitalize="none"
+                                        hasError={firstErrorField === "password"}
+                                        showPasswordToggle={true}
+                                        onPasswordTogglePress={() => setShowPassword(!showPassword)}
+                                        passwordVisibility={showPassword}
+                                    />
+                                )}
+                            />
+                        </View>
+
+                        {/* Submit Button */}
+                        <TouchableOpacity
+                            disabled={isLoading}
+                            onPress={handleSubmit(onSubmit, onError)}
+                            activeOpacity={0.95}
+                            className="bg-[#1a73e8] h-14 rounded-full flex-row items-center justify-center relative shadow-lg shadow-blue-500/20 active:opacity-95"
+                        >
+                            {isLoading ? (
+                                <ActivityIndicator size="small" color="white" />
+                            ) : (
+                                <Text className="text-white font-bold text-base tracking-wide">
+                                    Sign Up
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+
+                        {/* Privacy policy footer */}
+                        <View className="items-center mt-5 mb-4">
+                            <Text className="text-slate-400 text-[11px] font-semibold text-center leading-normal">
+                                By signing up, you agree to our
+                            </Text>
+                            <View className="flex-row mt-0.5">
+                                <TouchableOpacity>
+                                    <Text className="text-[#1a73e8] text-[11px] font-bold">Terms & Conditions</Text>
+                                </TouchableOpacity>
+                                <Text className="text-slate-400 text-[11px] font-semibold"> and </Text>
+                                <TouchableOpacity>
+                                    <Text className="text-[#1a73e8] text-[11px] font-bold">Privacy Policy</Text>
                                 </TouchableOpacity>
                             </View>
+                        </View>
+
+                        {/* Already have an account footer */}
+                        <View className="flex-row justify-center items-center pb-2">
+                            <Text className="text-slate-400 text-sm font-semibold">Already have an account? </Text>
+                            <TouchableOpacity onPress={() => router.replace("/login")}>
+                                <Text className="text-[#1a73e8] text-sm font-bold">Log In</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>
@@ -305,3 +465,4 @@ export default function RegisterScreen() {
         </SafeAreaView>
     );
 }
+

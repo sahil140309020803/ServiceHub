@@ -112,10 +112,13 @@ export const login = async (req, res) => {
             });
         }
 
-        const normalizedEmail = email.toLowerCase().trim();
+        const searchKey = email.trim();
 
         const user = await User.findOne({
-            email: normalizedEmail,
+            $or: [
+                { email: searchKey.toLowerCase() },
+                { phoneNumber: searchKey }
+            ]
         });
 
         if (!user) {

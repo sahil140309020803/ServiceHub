@@ -82,22 +82,22 @@ export const getContactStats = async (req, res) => {
         const callClicks = await ContactClick.countDocuments({ workerId, contactType: "call" });
 
         // Today's clicks
-        const whatsappClicksToday = await ContactClick.countDocuments({ 
-            workerId, 
-            contactType: "whatsapp", 
-            createdAt: { $gte: startOfToday } 
+        const whatsappClicksToday = await ContactClick.countDocuments({
+            workerId,
+            contactType: "whatsapp",
+            createdAt: { $gte: startOfToday }
         });
-        const callClicksToday = await ContactClick.countDocuments({ 
-            workerId, 
-            contactType: "call", 
-            createdAt: { $gte: startOfToday } 
+        const callClicksToday = await ContactClick.countDocuments({
+            workerId,
+            contactType: "call",
+            createdAt: { $gte: startOfToday }
         });
 
         // Favorites stats
         const totalFavorites = await Favorite.countDocuments({ workerId });
-        const favoritesToday = await Favorite.countDocuments({ 
-            workerId, 
-            createdAt: { $gte: startOfToday } 
+        const favoritesToday = await Favorite.countDocuments({
+            workerId,
+            createdAt: { $gte: startOfToday }
         });
 
         // Retrieve last 30 click records with customer details
@@ -120,7 +120,7 @@ export const getContactStats = async (req, res) => {
             activities.push({
                 _id: click._id,
                 type: click.contactType, // "whatsapp" | "call"
-                text: `${customerName} clicked your ${click.contactType === "whatsapp" ? "WhatsApp" : "Phone Call"}`,
+                text: `Someone tried to contact you via ${click.contactType === "whatsapp" ? "WhatsApp" : "Phone Call"}`,
                 createdAt: click.createdAt,
             });
         });
@@ -130,7 +130,7 @@ export const getContactStats = async (req, res) => {
             activities.push({
                 _id: fav._id,
                 type: "favorite",
-                text: `${customerName} added you to favourites`,
+                text: `Someone added you to favourites`,
                 createdAt: fav.createdAt,
             });
         });
