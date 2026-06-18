@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { Animated, StyleSheet, View } from "react-native";
 import useAuthStore from "../src/store/useAuthStore";
 import { useColorScheme } from "nativewind";
 import storage from "../src/utils/storage";
 import Toast from "react-native-toast-message";
 import { toastConfig } from "../config/toastConfig";
+import AnimatedSplashScreen from "../src/components/AnimatedSplashScreen";
 import "@/global.css";
 
 export default function RootLayout() {
@@ -14,16 +15,31 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
+  const splashOpacity = useRef(new Animated.Value(1)).current;
 
-  // Load user profile on initial mount
+  // Load user profile on initial mount with a minimum splash display duration
   useEffect(() => {
     const checkUser = async () => {
+      const startTime = Date.now();
       await loadUser();
-      setIsInitialLoading(false);
+      const elapsedTime = Date.now() - startTime;
+      const minDisplayTime = 3000; // 3 seconds minimum display time
+      const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+
+      setTimeout(() => {
+        // Fade out splash screen smoothly
+        Animated.timing(splashOpacity, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }).start(() => {
+          setShowSplash(false);
+        });
+      }, remainingTime);
     };
     checkUser();
-  }, []);
+  }, [loadUser, splashOpacity]);
 
   // Synchronize user-specific or global theme state
   useEffect(() => {
@@ -99,27 +115,26 @@ export default function RootLayout() {
     }
   }, [token, isLoading, segments, user, profileCompleted]);
 
-  if (isInitialLoading) {
-    return (
-      <View className="flex-1 justify-center items-center bg-slate-900">
-        <ActivityIndicator size="large" color="#6366f1" />
-      </View>
-    );
-  }
-
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }}>
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
         <Stack.Screen name="(tabs)" />
       </Stack>
+
+      {showSplash && (
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: splashOpacity, zIndex: 9999 }]}>
+          <AnimatedSplashScreen />
+        </Animated.View>
+      )}
+
       <Toast
         config={toastConfig}
         position="top"
         topOffset={60}
       />
-    </>
+    </View>
   );
 }

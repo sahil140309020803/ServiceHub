@@ -4,12 +4,15 @@ import storage from "../utils/storage";
 
 // Dynamic base URL detection for Expo development on physical devices vs simulators
 const getBaseUrl = () => {
+
+    return "https://servicehub-backend-delta.vercel.app";
+
     const hostUri = Constants.expoConfig?.hostUri;
     if (hostUri) {
         const ip = hostUri.split(":")[0];
         return `http://${ip}:5000`;
     }
-    return "http://localhost:5000";
+    // return "http://localhost:5000";
 };
 
 const api = axios.create({
