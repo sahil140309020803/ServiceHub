@@ -17,6 +17,7 @@ import { useIsFocused } from "@react-navigation/native";
 import { useColorScheme } from "nativewind";
 import api from "../../src/services/api";
 import useAuthStore from "../../src/store/useAuthStore";
+import useLocationStore from "../../src/store/useLocationStore";
 
 export default function FavoritesScreen() {
     const { user } = useAuthStore();
@@ -223,6 +224,21 @@ function WorkerInsightsTab() {
     );
 }
 
+// Helper for distance calculations (Haversine formula)
+const getDistance = (lat1, lon1, lat2, lon2) => {
+    if (lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined) return null;
+    if (lat1 === null || lon1 === null || lat2 === null || lon2 === null) return null;
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+};
+
 // ----------------------------------------------------
 // CUSTOMER SAVED LIST VIEW
 // ----------------------------------------------------
@@ -231,6 +247,7 @@ function CustomerFavoritesTab() {
     const isFocused = useIsFocused();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
+    const { location } = useLocationStore();
 
     const [favorites, setFavorites] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -304,6 +321,14 @@ function CustomerFavoritesTab() {
         const profileImage = userDetails.profileImage || "";
         const city = worker.serviceAreas?.[0]?.city || "Local Area";
 
+        let distanceText = city;
+        if (location && worker.latitude && worker.longitude && worker.latitude !== 0 && worker.longitude !== 0) {
+            const dist = getDistance(location.latitude, location.longitude, worker.latitude, worker.longitude);
+            if (dist !== null) {
+                distanceText = `${dist.toFixed(1)} km away`;
+            }
+        }
+
         return (
             <TouchableOpacity
                 onPress={() => router.push(`/worker-profile?workerId=${worker._id}`)}
@@ -362,7 +387,7 @@ function CustomerFavoritesTab() {
                         <View className="flex-row items-center">
                             <Ionicons name="location-outline" size={12} color="#6366f1" />
                             <Text className="text-slate-500 dark:text-slate-400 text-xs font-semibold ml-1">
-                                {city}
+                                {distanceText}
                             </Text>
                         </View>
                     </View>

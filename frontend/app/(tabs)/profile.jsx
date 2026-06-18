@@ -10,7 +10,7 @@ import {
     Image,
     Modal,
     TextInput,
-    Alert
+    Platform
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +20,20 @@ import useAuthStore from "../../src/store/useAuthStore";
 import api from "../../src/services/api";
 import useLocationStore from "../../src/store/useLocationStore";
 import Toast from "react-native-toast-message";
+import * as Location from "expo-location";
+
+// Conditionally load react-native-maps to prevent web bundling failures
+let MapView = null;
+let Marker = null;
+if (Platform.OS !== "web") {
+    try {
+        const Maps = require("react-native-maps");
+        MapView = Maps.default;
+        Marker = Maps.Marker;
+    } catch (e) {
+        console.warn("react-native-maps failed to load:", e);
+    }
+}
 
 export default function ProfileScreen() {
     const { user, logout } = useAuthStore();
@@ -81,8 +95,16 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
     const [locSuggestions, setLocSuggestions] = useState([]);
     const [isSearchingLoc, setIsSearchingLoc] = useState(false);
     const [isDetectingLoc, setIsDetectingLoc] = useState(false);
+    const [tempResolvedLocation, setTempResolvedLocation] = useState(null);
 
     const { setLocation, getCurrentLocation, searchManualLocation } = useLocationStore();
+
+    const closeLocationModal = () => {
+        setLocationModalVisible(false);
+        setTempResolvedLocation(null);
+        setLocSearchQuery("");
+        setLocSuggestions([]);
+    };
 
     const fetchGallery = async (workerId) => {
         try {
@@ -323,23 +345,33 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
         }
     };
 
-    const handleSearchLocation = async (query) => {
-        setLocSearchQuery(query);
-        if (query.trim().length > 2) {
-            setIsSearchingLoc(true);
-            const list = await searchManualLocation(query);
-            setLocSuggestions(list);
-            setIsSearchingLoc(false);
-        } else {
+    // Debounced location suggestions fetch
+    useEffect(() => {
+        if (!locSearchQuery.trim() || locSearchQuery.length < 3) {
             setLocSuggestions([]);
+            return;
         }
-    };
+
+        const delayDebounce = setTimeout(async () => {
+            setIsSearchingLoc(true);
+            try {
+                const results = await searchManualLocation(locSearchQuery);
+                setLocSuggestions(results);
+            } catch (err) {
+                console.error("Profile suggestions search failed:", err);
+            } finally {
+                setIsSearchingLoc(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounce);
+    }, [locSearchQuery]);
 
     const handleGPSDetect = async () => {
         setIsDetectingLoc(true);
         const resolved = await getCurrentLocation();
         if (resolved) {
-            await handleSaveLocation(resolved);
+            setTempResolvedLocation(resolved);
         } else {
             Toast.show({
                 type: "error",
@@ -350,18 +382,130 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
         setIsDetectingLoc(false);
     };
 
-    const handleSaveLocation = async (chosenLoc) => {
+    const handlePickOnMap = async () => {
+        setIsDetectingLoc(true);
         try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            let lat = 28.6139; // Fallback to New Delhi
+            let lon = 77.2090;
+            let addressVal = "New Delhi, India";
+
+            if (status === "granted") {
+                const gpsLocation = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced,
+                });
+                lat = gpsLocation.coords.latitude;
+                lon = gpsLocation.coords.longitude;
+                
+                try {
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+                        {
+                            headers: {
+                                "User-Agent": "ServiceHub-Mobile/1.0"
+                            }
+                        }
+                    );
+                    const geoData = await response.json();
+                    if (geoData && geoData.display_name) {
+                        addressVal = geoData.display_name;
+                    }
+                } catch (e) {
+                    console.error("Nominatim reverse geocode in profile pick map failed:", e);
+                }
+            } else {
+                if (profile?.latitude && profile?.longitude) {
+                    lat = profile.latitude;
+                    lon = profile.longitude;
+                    addressVal = profile.address;
+                }
+            }
+
+            setTempResolvedLocation({
+                latitude: lat,
+                longitude: lon,
+                address: addressVal
+            });
+        } catch (err) {
+            console.error("Pick on map in profile error:", err);
+            const fallbackLat = profile?.latitude || 28.6139;
+            const fallbackLon = profile?.longitude || 77.2090;
+            const fallbackAddress = profile?.address || "Selected Location";
+            setTempResolvedLocation({
+                latitude: fallbackLat,
+                longitude: fallbackLon,
+                address: fallbackAddress
+            });
+        } finally {
+            setIsDetectingLoc(false);
+        }
+    };
+
+    const handleMarkerDragEnd = async (coords) => {
+        const lat = coords.latitude;
+        const lon = coords.longitude;
+        
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+                {
+                    headers: {
+                        "User-Agent": "ServiceHub-Mobile/1.0"
+                    }
+                }
+            );
+            const geoData = await response.json();
+            const newAddress = geoData?.display_name || `Coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+            setTempResolvedLocation({
+                latitude: lat,
+                longitude: lon,
+                address: newAddress
+            });
+        } catch (err) {
+            console.error("Nominatim reverse geocode on drag end in profile failed:", err);
+            setTempResolvedLocation(prev => ({
+                ...prev,
+                latitude: lat,
+                longitude: lon,
+                address: prev?.address || `Coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`
+            }));
+        }
+    };
+
+    const handleSaveLocation = async (chosenLoc) => {
+        setIsDetectingLoc(true);
+        try {
+            let serviceAreas = [];
+            try {
+                const geoRes = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?lat=${chosenLoc.latitude}&lon=${chosenLoc.longitude}&format=json`,
+                    {
+                        headers: {
+                            "User-Agent": "ServiceHub-Mobile/1.0"
+                        }
+                    }
+                );
+                const geoData = await geoRes.json();
+                const addr = geoData.address || {};
+                const area = addr.suburb || addr.neighbourhood || addr.road || "Local Area";
+                const city = addr.city || addr.town || addr.village || addr.county || "Local City";
+                const state = addr.state || "Local State";
+                serviceAreas = [{ area, city, state }];
+            } catch (e) {
+                console.error("Reverse geocoding service areas in profile failed:", e);
+            }
+
             const res = await api.post("/api/workers", {
                 profession: profile.profession,
                 address: chosenLoc.address,
                 latitude: chosenLoc.latitude,
                 longitude: chosenLoc.longitude,
+                serviceAreas: serviceAreas.length > 0 ? serviceAreas : undefined
             });
             if (res.data.success) {
                 await setLocation(chosenLoc); // Sync with local location store (active home location)
                 setProfile(res.data.data);
-                setLocationModalVisible(false);
+                closeLocationModal();
                 Toast.show({
                     type: "success",
                     text1: "Current Service location updated",
@@ -373,6 +517,8 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 text1: "Error",
                 text2: e.response?.data?.message || "Failed to update profile location",
             });
+        } finally {
+            setIsDetectingLoc(false);
         }
     };
 
@@ -1105,91 +1251,198 @@ function WorkerProfileTab({ user, logout, router, isFocused }) {
                 </View>
             </Modal>
 
-            {/* 6. Edit Location Modal (Autocomplete Suggestions + GPS) */}
+            {/* 6. Edit Location Modal (Autocomplete Suggestions + GPS + Map Picker) */}
             <Modal
                 animationType="fade"
                 transparent={true}
                 visible={locationModalVisible}
-                onRequestClose={() => setLocationModalVisible(false)}
+                onRequestClose={closeLocationModal}
             >
                 <View className="flex-1 bg-black/60 justify-center items-center px-6">
-                    <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
-                        <View className="flex-row justify-between items-center">
-                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Change Location Address</Text>
-                            <TouchableOpacity onPress={() => setLocationModalVisible(false)} className="p-1">
-                                <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                    {tempResolvedLocation ? (
+                        <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl items-center relative overflow-hidden">
+                            {/* Close/Back Button */}
+                            <TouchableOpacity
+                                onPress={() => setTempResolvedLocation(null)}
+                                className="absolute top-4 right-4 p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-full z-50 active:opacity-75"
+                            >
+                                <Ionicons name="arrow-back-outline" size={18} color={isDark ? "white" : "black"} />
                             </TouchableOpacity>
-                        </View>
 
-                        {/* GPS Auto Detect Option */}
-                        <TouchableOpacity
-                            onPress={handleGPSDetect}
-                            disabled={isDetectingLoc}
-                            className="bg-indigo-600 py-3 rounded-xl flex-row items-center justify-center space-x-2 active:opacity-90"
-                        >
-                            {isDetectingLoc ? (
-                                <ActivityIndicator size="small" color="white" />
+                            <View className="w-14 h-14 bg-indigo-600/10 rounded-full items-center justify-center border border-indigo-500/20 mt-2">
+                                <Ionicons name="location" size={28} color="#6366f1" />
+                            </View>
+
+                            <Text className="text-slate-900 dark:text-white font-extrabold text-lg text-center">Confirm Address Location</Text>
+
+                            <View className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4 rounded-xl w-full">
+                                <Text className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-wider">Address Resolved</Text>
+                                <Text className="text-slate-800 dark:text-white text-xs mt-1 leading-relaxed" numberOfLines={3}>
+                                    {tempResolvedLocation.address}
+                                </Text>
+                            </View>
+
+                            {/* Map Preview with draggable marker */}
+                            {MapView ? (
+                                <View className="w-full h-[200] rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+                                    <MapView
+                                        style={{ width: "100%", height: "100%" }}
+                                        region={{
+                                            latitude: tempResolvedLocation.latitude,
+                                            longitude: tempResolvedLocation.longitude,
+                                            latitudeDelta: 0.015,
+                                            longitudeDelta: 0.015
+                                        }}
+                                    >
+                                        <Marker
+                                            coordinate={{
+                                                latitude: tempResolvedLocation.latitude,
+                                                longitude: tempResolvedLocation.longitude
+                                            }}
+                                            draggable
+                                            onDragEnd={(e) => handleMarkerDragEnd(e.nativeEvent.coordinate)}
+                                            title="Your Location"
+                                            description="Drag this pin to adjust your position"
+                                        />
+                                    </MapView>
+                                </View>
                             ) : (
-                                <>
-                                    <Ionicons name="locate" size={18} color="white" />
-                                    <Text className="text-white font-bold text-sm ml-1">Auto Detect Location</Text>
-                                </>
+                                <View className="w-full h-[80] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 items-center justify-center p-3">
+                                    <Ionicons name="map-outline" size={18} color="#6366f1" />
+                                    <Text className="text-slate-500 dark:text-slate-400 text-[10px] mt-1 text-center">
+                                        Map preview not supported on web.
+                                    </Text>
+                                    <Text className="text-slate-900 dark:text-white text-[9px] font-mono mt-0.5 text-center">
+                                        Lat: {tempResolvedLocation.latitude.toFixed(5)}, Lng: {tempResolvedLocation.longitude.toFixed(5)}
+                                    </Text>
+                                </View>
                             )}
-                        </TouchableOpacity>
 
-                        <View className="flex-row items-center my-1">
-                            <View className="flex-grow h-[1] bg-slate-200 dark:bg-slate-800" />
-                            <Text className="text-slate-500 text-[10px] uppercase font-bold px-3">or search manually</Text>
-                            <View className="flex-grow h-[1] bg-slate-200 dark:bg-slate-800" />
-                        </View>
+                            <View className="w-full gap-y-3 mt-2">
+                                <TouchableOpacity
+                                    onPress={() => handleSaveLocation(tempResolvedLocation)}
+                                    disabled={isDetectingLoc}
+                                    className="bg-indigo-600 py-3.5 rounded-xl justify-center items-center active:opacity-90 shadow-lg shadow-indigo-500/20"
+                                >
+                                    {isDetectingLoc ? (
+                                        <ActivityIndicator size="small" color="white" />
+                                    ) : (
+                                        <Text className="text-white font-bold text-sm">Save & Set Service Location</Text>
+                                    )}
+                                </TouchableOpacity>
 
-                        {/* Text Search Field */}
-                        <View className="relative">
-                            <TextInput
-                                className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 text-slate-900 dark:text-white text-sm"
-                                placeholder="Search town, city or region..."
-                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                                value={locSearchQuery}
-                                onChangeText={handleSearchLocation}
-                            />
-                            <View className="absolute left-3 top-3.5">
-                                <Ionicons name="search-outline" size={16} color={isDark ? "#64748b" : "#94a3b8"} />
+                                <TouchableOpacity
+                                    onPress={() => setTempResolvedLocation(null)}
+                                    disabled={isDetectingLoc}
+                                    className="bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 py-3 rounded-xl justify-center items-center active:opacity-90"
+                                >
+                                    <Text className="text-slate-700 dark:text-slate-300 font-semibold text-xs">Cancel</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
+                    ) : (
+                        <View className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full p-6 gap-y-4 shadow-2xl">
+                            <View className="flex-row justify-between items-center">
+                                <Text className="text-slate-900 dark:text-white font-extrabold text-lg">Change Location Address</Text>
+                                <TouchableOpacity onPress={closeLocationModal} className="p-1">
+                                    <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
 
-                        {/* Search Autocomplete suggestions list */}
-                        {isSearchingLoc ? (
-                            <ActivityIndicator size="small" color="#6366f1" className="py-2" />
-                        ) : (
-                            locSuggestions.length > 0 && (
-                                <View className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl mt-1 max-h-[160] overflow-hidden shadow-inner">
-                                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                                        {locSuggestions.map((item) => (
-                                            <TouchableOpacity
-                                                key={item.id}
-                                                onPress={() => handleSaveLocation(item)}
-                                                className="px-4 py-3 border-b border-slate-200 dark:border-slate-900 active:bg-slate-200 dark:active:bg-slate-900 flex-row items-center"
-                                            >
-                                                <Ionicons name="location-outline" size={14} color="#6366f1" style={{ marginRight: 8 }} />
-                                                <Text className="text-slate-900 dark:text-white text-xs leading-relaxed flex-grow" numberOfLines={2}>
-                                                    {item.address}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                </View>
-                            )
-                        )}
-
-                        <View className="flex-row gap-x-4 mt-2">
+                            {/* GPS Auto Detect Option */}
                             <TouchableOpacity
-                                onPress={() => setLocationModalVisible(false)}
-                                className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center active:opacity-90"
+                                onPress={handleGPSDetect}
+                                disabled={isDetectingLoc}
+                                className="bg-indigo-600 py-3 rounded-xl flex-row items-center justify-center space-x-2 active:opacity-90"
                             >
-                                <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
+                                {isDetectingLoc ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="locate" size={18} color="white" />
+                                        <Text className="text-white font-bold text-sm ml-1">Auto Detect Location</Text>
+                                    </>
+                                )}
                             </TouchableOpacity>
+
+                            {/* Pick Location on Map button */}
+                            <TouchableOpacity
+                                onPress={handlePickOnMap}
+                                disabled={isDetectingLoc}
+                                className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 py-3 rounded-xl flex-row items-center justify-center space-x-2 active:opacity-90 shadow-sm"
+                            >
+                                {isDetectingLoc ? (
+                                    <ActivityIndicator size="small" color="#6366f1" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="map" size={18} color="#6366f1" />
+                                        <Text className="text-slate-900 dark:text-white font-bold ml-1 text-sm">Pick Location on Map</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+
+                            <View className="flex-row items-center my-1">
+                                <View className="flex-grow h-[1] bg-slate-200 dark:bg-slate-800" />
+                                <Text className="text-slate-500 text-[10px] uppercase font-bold px-3">or search manually</Text>
+                                <View className="flex-grow h-[1] bg-slate-200 dark:bg-slate-800" />
+                            </View>
+
+                            {/* Text Search Field */}
+                            <View className="relative">
+                                <TextInput
+                                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 text-slate-900 dark:text-white text-sm"
+                                    placeholder="Search town, city or region..."
+                                    placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                    value={locSearchQuery}
+                                    onChangeText={setLocSearchQuery}
+                                />
+                                <View className="absolute left-3 top-3.5">
+                                    <Ionicons name="search-outline" size={16} color={isDark ? "#64748b" : "#94a3b8"} />
+                                </View>
+                            </View>
+
+                            {/* Search Autocomplete suggestions list */}
+                            {isSearchingLoc ? (
+                                <ActivityIndicator size="small" color="#6366f1" className="py-2" />
+                            ) : (
+                                locSuggestions.length > 0 && (
+                                    <View className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl mt-1 max-h-[160] overflow-hidden shadow-inner">
+                                        <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                                            {locSuggestions.map((item) => (
+                                                <TouchableOpacity
+                                                    key={item.id}
+                                                    onPress={() => {
+                                                        setTempResolvedLocation({
+                                                            address: item.address,
+                                                            latitude: item.latitude,
+                                                            longitude: item.longitude
+                                                        });
+                                                        setLocSuggestions([]);
+                                                        setLocSearchQuery("");
+                                                    }}
+                                                    className="px-4 py-3 border-b border-slate-200 dark:border-slate-900 active:bg-slate-200 dark:active:bg-slate-900 flex-row items-center"
+                                                >
+                                                    <Ionicons name="location-outline" size={14} color="#6366f1" style={{ marginRight: 8 }} />
+                                                    <Text className="text-slate-900 dark:text-white text-xs leading-relaxed flex-grow" numberOfLines={2}>
+                                                        {item.address}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )
+                            )}
+
+                            <View className="flex-row gap-x-4 mt-2">
+                                <TouchableOpacity
+                                    onPress={closeLocationModal}
+                                    className="flex-1 bg-slate-100 dark:bg-slate-800 py-3 rounded-xl items-center active:opacity-90"
+                                >
+                                    <Text className="text-slate-600 dark:text-slate-300 font-bold">Cancel</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    </View>
+                    )}
                 </View>
             </Modal>
         </SafeAreaView>

@@ -271,6 +271,58 @@ export default function ManageWorkerProfileScreen() {
         }
     };
 
+    // Start map location picker by setting initial coords and letting user drag pin
+    const handlePickOnMap = async () => {
+        setIsLocating(true);
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            let lat = 28.6139; // Fallback New Delhi
+            let lon = 77.2090;
+            let addressVal = "New Delhi, India";
+
+            if (status === "granted") {
+                const gpsLocation = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced,
+                });
+                lat = gpsLocation.coords.latitude;
+                lon = gpsLocation.coords.longitude;
+
+                try {
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+                        {
+                            headers: {
+                                "User-Agent": "ServiceHub-Mobile/1.0"
+                            }
+                        }
+                    );
+                    const geoData = await response.json();
+                    if (geoData && geoData.display_name) {
+                        addressVal = geoData.display_name;
+                    }
+                } catch (e) {
+                    console.error("Nominatim reverse geocode in pick map failed:", e);
+                }
+            } else {
+                if (latitude && longitude) {
+                    lat = parseFloat(latitude);
+                    lon = parseFloat(longitude);
+                    addressVal = address;
+                }
+            }
+
+            setLatitude(String(lat));
+            setLongitude(String(lon));
+            setAddress(addressVal);
+            Alert.alert("Success", "Map position initialized! Use the draggable marker below to adjust.");
+        } catch (err) {
+            console.error("Pick on map error:", err);
+            Alert.alert("Error", "Failed to initialize map location.");
+        } finally {
+            setIsLocating(false);
+        }
+    };
+
     // Handle Marker Drag End and update coordinates + address
     const handleMarkerDragEnd = async (coords) => {
         const lat = coords.latitude;
@@ -574,6 +626,24 @@ export default function ManageWorkerProfileScreen() {
                                     <Ionicons name="locate" size={18} color="#6366f1" />
                                     <Text className="text-indigo-400 font-bold ml-1 text-sm">
                                         Auto Detect Coordinates (GPS)
+                                    </Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+
+                        {/* Pick Location on Map button */}
+                        <TouchableOpacity
+                            onPress={handlePickOnMap}
+                            disabled={isLocating}
+                            className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 py-3 rounded-xl flex-row items-center justify-center space-x-2 active:opacity-90 mt-2"
+                        >
+                            {isLocating ? (
+                                <ActivityIndicator size="small" color="#6366f1" />
+                            ) : (
+                                <>
+                                    <Ionicons name="map" size={18} color="#6366f1" />
+                                    <Text className="text-slate-900 dark:text-white font-bold ml-1 text-sm">
+                                        Pick Location on Map
                                     </Text>
                                 </>
                             )}

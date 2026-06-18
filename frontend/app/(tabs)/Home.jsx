@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
     Text,
@@ -7,19 +7,34 @@ import {
     TouchableOpacity,
     StatusBar,
     ActivityIndicator,
-    Alert,
-    Image
+    Image,
+    Platform,
+    Animated
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useIsFocused } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 import { useColorScheme } from "nativewind";
 import useAuthStore from "../../src/store/useAuthStore";
 import useLocationStore from "../../src/store/useLocationStore";
 import api from "../../src/services/api";
 import storage from "../../src/utils/storage";
 import Toast from "react-native-toast-message";
+import * as Location from "expo-location";
+
+// Conditionally load react-native-maps to prevent web bundling failures
+let MapView = null;
+let Marker = null;
+if (Platform.OS !== "web") {
+    try {
+        const Maps = require("react-native-maps");
+        MapView = Maps.default;
+        Marker = Maps.Marker;
+    } catch (e) {
+        console.warn("react-native-maps failed to load:", e);
+    }
+}
 
 // Helper to resolve nice colors and styles for dynamic categories
 const getCategoryStyles = (name) => {
@@ -59,11 +74,67 @@ const getLabelIcon = (label) => {
     }
 };
 
+// Static array of catchphrases/slides for the fader banner
+const bannerSlides = [
+    { text: "Need an electrician?", icon: "flash-outline", color: "#fbbf24", query: "Electrician", image: require("../../assets/images/electrician.png") },
+    { text: "Looking for a plumber?", icon: "water-outline", color: "#38bdf8", query: "Plumber", image: require("../../assets/images/plumber.png") },
+    { text: "Want your AC repaired or serviced?", icon: "snow-outline", color: "#60a5fa", query: "AC Repair", image: require("../../assets/images/air-conditioner.png") },
+    { text: "Need a carpenter for furniture work?", icon: "hammer-outline", color: "#fb923c", query: "Carpenter", image: require("../../assets/images/carpenter.png") },
+    { text: "Need a TV repair expert?", icon: "tv-outline", color: "#a78bfa", query: "TV Repair", emoji: "📺" },
+    { text: "Planning to paint your home?", icon: "brush-outline", color: "#f87171", query: "Painter", image: require("../../assets/images/paint-roller.png") },
+    { text: "Need a bathroom fitting expert?", icon: "water-outline", color: "#2dd4bf", query: "Bathroom Fitting", emoji: "🚿" },
+    { text: "RO or water purifier service?", icon: "water-outline", color: "#34d399", query: "RO Repair", image: require("../../assets/images/water-filter.png") },
+    { text: "Need a washing machine repair?", icon: "construct-outline", color: "#f472b6", query: "Washing Machine Repair", image: require("../../assets/images/washing-machine.png") },
+    { text: "Refrigerator not cooling?", icon: "thermometer-outline", color: "#38bdf8", query: "Refrigerator Repair", image: require("../../assets/images/refrigerator.png") },
+    { text: "Need CCTV installation?", icon: "videocam-outline", color: "#f43f5e", query: "CCTV Installation", image: require("../../assets/images/security-camera.png") },
+    { text: "Find trusted professionals near you.", icon: "home-outline", color: "#6366f1", query: "all", emoji: "🏠" },
+    { text: "We've got verified professionals ready to help.", icon: "checkmark-circle-outline", color: "#10b981", query: "all", emoji: "✅" }
+];
+
 export default function HomeDashboard() {
     const { user } = useAuthStore();
     const isFocused = useIsFocused();
+    const navigation = useNavigation();
     const displayName = user?.fullName || "User";
     const router = useRouter();
+
+    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+    const fadeAnim = useRef(new Animated.Value(1)).current;
+    const slideAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            Animated.parallel([
+                Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 900,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(slideAnim, {
+                    toValue: -20,
+                    duration: 800,
+                    useNativeDriver: true,
+                })
+            ]).start(() => {
+                setCurrentSlideIndex((prev) => (prev + 1) % bannerSlides.length);
+                slideAnim.setValue(15);
+                Animated.parallel([
+                    Animated.timing(fadeAnim, {
+                        toValue: 1,
+                        duration: 900,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(slideAnim, {
+                        toValue: 1,
+                        duration: 800,
+                        useNativeDriver: true,
+                    })
+                ]).start();
+            });
+        }, 5500);
+
+        return () => clearInterval(interval);
+    }, [fadeAnim, slideAnim]);
 
     const { colorScheme, setColorScheme } = useColorScheme();
     const isDark = colorScheme === "dark";
@@ -108,6 +179,8 @@ export default function HomeDashboard() {
     // Favorites states
     const [favorites, setFavorites] = useState({});
 
+
+
     // Worker Dashboard States
     const [workerProfile, setWorkerProfile] = useState(null);
     const [workerStats, setWorkerStats] = useState(null);
@@ -115,7 +188,7 @@ export default function HomeDashboard() {
     const [isTogglingAvailability, setIsTogglingAvailability] = useState(false);
     const [showAllActivitiesModal, setShowAllActivitiesModal] = useState(false);
 
-    // Relative Time Helper
+    // Relative Time Helper 
     const getRelativeTime = (dateString) => {
         if (!dateString) return "";
         const now = new Date();
@@ -263,33 +336,57 @@ export default function HomeDashboard() {
         }
     };
 
+    const initHomeData = async () => {
+        setIsLoading(true);
+        try {
+            // Fetch categories
+            const catRes = await api.get("/api/categories");
+            if (catRes.data.success) {
+                const activeCats = catRes.data.data.filter((cat) => cat.isActive);
+                setCategories(activeCats);
+            } else {
+                setError("Failed to load categories");
+            }
+        } catch (err) {
+            console.error("Error fetching categories:", err);
+            setError("Failed to fetch categories");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const reloadData = async () => {
+        const isWorker = user?.role === "worker" || user?.role === "admin";
+        if (isWorker) {
+            fetchWorkerProfile();
+            fetchWorkerStats();
+            if (user) {
+                fetchSavedLocations();
+            }
+        } else {
+            initHomeData();
+            if (user) {
+                fetchSavedLocations();
+
+                fetchFavorites();
+            }
+            if (location) {
+                fetchWorkersNearby();
+            }
+        }
+    };
+
     // Initial Load
     useEffect(() => {
         const isWorker = user?.role === "worker" || user?.role === "admin";
         if (isWorker) {
             fetchWorkerProfile();
             fetchWorkerStats();
+            if (user) {
+                fetchSavedLocations();
+            }
             return;
         }
-
-        const initHomeData = async () => {
-            setIsLoading(true);
-            try {
-                // Fetch categories
-                const catRes = await api.get("/api/categories");
-                if (catRes.data.success) {
-                    const activeCats = catRes.data.data.filter((cat) => cat.isActive);
-                    setCategories(activeCats);
-                } else {
-                    setError("Failed to load categories");
-                }
-            } catch (err) {
-                console.error("Error fetching categories:", err);
-                setError("Failed to fetch categories");
-            } finally {
-                setIsLoading(false);
-            }
-        };
 
         const checkLocationOnStartup = async () => {
             await loadSavedLocation();
@@ -307,6 +404,20 @@ export default function HomeDashboard() {
         }
     }, [user]);
 
+    const reloadDataRef = useRef(reloadData);
+    reloadDataRef.current = reloadData;
+
+    // Handle Home tab click to reload data
+    useEffect(() => {
+        if (!navigation) return;
+        const unsubscribe = navigation.addListener("tabPress", () => {
+            if (reloadDataRef.current) {
+                reloadDataRef.current();
+            }
+        });
+        return unsubscribe;
+    }, [navigation]);
+
     // Auto-refresh when screen gets focus
     useEffect(() => {
         if (isFocused) {
@@ -314,6 +425,9 @@ export default function HomeDashboard() {
             if (isWorker) {
                 fetchWorkerProfile();
                 fetchWorkerStats();
+                if (user) {
+                    fetchSavedLocations();
+                }
             } else {
                 if (user) {
                     fetchSavedLocations();
@@ -353,6 +467,16 @@ export default function HomeDashboard() {
         if (!location) return;
         setIsWorkersLoading(true);
         try {
+            // Load official system categories if not already loaded
+            let currentCategories = categories;
+            if (currentCategories.length === 0) {
+                const catRes = await api.get("/api/categories");
+                if (catRes.data.success) {
+                    currentCategories = catRes.data.data.filter((cat) => cat.isActive);
+                    setCategories(currentCategories);
+                }
+            }
+
             const [nearbyRes, topRes] = await Promise.all([
                 api.get("/api/workers", {
                     params: { lat: location.latitude, lng: location.longitude, limit: 6 }
@@ -375,6 +499,17 @@ export default function HomeDashboard() {
         }
     };
 
+    const handleCategoryCardPress = (categoryName) => {
+        const cat = categories.find(c =>
+            c.name.toLowerCase().includes(categoryName.toLowerCase())
+        );
+        if (cat) {
+            router.push(`/category-workers?categoryId=${cat._id}&categoryName=${cat.name}`);
+        } else {
+            router.push(`/category-workers?searchQuery=${encodeURIComponent(categoryName)}&categoryName=${encodeURIComponent(categoryName)}`);
+        }
+    };
+
     useEffect(() => {
         if (location) {
             fetchWorkersNearby();
@@ -391,15 +526,64 @@ export default function HomeDashboard() {
         setIsSavingAddress(true);
         try {
             const isWorker = user?.role === "worker" || user?.role === "admin";
-            if (isWorker && workerProfile) {
-                const res = await api.post("/api/workers", {
-                    profession: workerProfile.profession,
-                    address: tempResolvedLocation.address,
-                    latitude: tempResolvedLocation.latitude,
-                    longitude: tempResolvedLocation.longitude
-                });
-                if (res.data.success) {
-                    setWorkerProfile(res.data.data);
+            if (isWorker) {
+                let prof = workerProfile?.profession;
+                if (!prof) {
+                    try {
+                        const profileRes = await api.get("/api/workers/me");
+                        if (profileRes.data.success && profileRes.data.data) {
+                            prof = profileRes.data.data.profession;
+                            setWorkerProfile(profileRes.data.data);
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch worker profile inside save proceed:", e);
+                    }
+                }
+
+                if (prof) {
+                    let serviceAreas = [];
+                    try {
+                        const geoRes = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?lat=${tempResolvedLocation.latitude}&lon=${tempResolvedLocation.longitude}&format=json`,
+                            {
+                                headers: {
+                                    "User-Agent": "ServiceHub-Mobile/1.0"
+                                }
+                            }
+                        );
+                        const geoData = await geoRes.json();
+                        const addr = geoData.address || {};
+                        const area = addr.suburb || addr.neighbourhood || addr.road || "Local Area";
+                        const city = addr.city || addr.town || addr.village || addr.county || "Local City";
+                        const state = addr.state || "Local State";
+                        serviceAreas = [{ area, city, state }];
+                    } catch (e) {
+                        console.error("Reverse geocoding service areas failed:", e);
+                    }
+
+                    const res = await api.post("/api/workers", {
+                        profession: prof,
+                        address: tempResolvedLocation.address,
+                        latitude: tempResolvedLocation.latitude,
+                        longitude: tempResolvedLocation.longitude,
+                        serviceAreas: serviceAreas.length > 0 ? serviceAreas : undefined
+                    });
+                    if (res.data.success) {
+                        setWorkerProfile(res.data.data);
+                    }
+                }
+
+                // Also save to user extension locations list so it populates the saved addresses list
+                try {
+                    await api.post("/api/extensions/locations", {
+                        locationName: tempResolvedLocation.address,
+                        latitude: tempResolvedLocation.latitude,
+                        longitude: tempResolvedLocation.longitude,
+                        label: selectedLabel
+                    });
+                    await fetchSavedLocations();
+                } catch (saveErr) {
+                    console.error("Failed to save location to user extension list for worker:", saveErr);
                 }
             } else if (user) {
                 await api.post("/api/extensions/locations", {
@@ -408,7 +592,7 @@ export default function HomeDashboard() {
                     longitude: tempResolvedLocation.longitude,
                     label: selectedLabel
                 });
-                fetchSavedLocations();
+                await fetchSavedLocations();
             }
             await setLocation(tempResolvedLocation);
             setTempResolvedLocation(null);
@@ -432,17 +616,49 @@ export default function HomeDashboard() {
     const handleProceedWithoutSaving = async () => {
         if (!tempResolvedLocation) return;
         const isWorker = user?.role === "worker" || user?.role === "admin";
-        if (isWorker && workerProfile) {
+        if (isWorker) {
             setIsSavingAddress(true);
             try {
-                const res = await api.post("/api/workers", {
-                    profession: workerProfile.profession,
-                    address: tempResolvedLocation.address,
-                    latitude: tempResolvedLocation.latitude,
-                    longitude: tempResolvedLocation.longitude
-                });
-                if (res.data.success) {
-                    setWorkerProfile(res.data.data);
+                let prof = workerProfile?.profession;
+                if (!prof) {
+                    const profileRes = await api.get("/api/workers/me");
+                    if (profileRes.data.success && profileRes.data.data) {
+                        prof = profileRes.data.data.profession;
+                        setWorkerProfile(profileRes.data.data);
+                    }
+                }
+
+                if (prof) {
+                    let serviceAreas = [];
+                    try {
+                        const geoRes = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?lat=${tempResolvedLocation.latitude}&lon=${tempResolvedLocation.longitude}&format=json`,
+                            {
+                                headers: {
+                                    "User-Agent": "ServiceHub-Mobile/1.0"
+                                }
+                            }
+                        );
+                        const geoData = await geoRes.json();
+                        const addr = geoData.address || {};
+                        const area = addr.suburb || addr.neighbourhood || addr.road || "Local Area";
+                        const city = addr.city || addr.town || addr.village || addr.county || "Local City";
+                        const state = addr.state || "Local State";
+                        serviceAreas = [{ area, city, state }];
+                    } catch (e) {
+                        console.error("Reverse geocoding service areas failed:", e);
+                    }
+
+                    const res = await api.post("/api/workers", {
+                        profession: prof,
+                        address: tempResolvedLocation.address,
+                        latitude: tempResolvedLocation.latitude,
+                        longitude: tempResolvedLocation.longitude,
+                        serviceAreas: serviceAreas.length > 0 ? serviceAreas : undefined
+                    });
+                    if (res.data.success) {
+                        setWorkerProfile(res.data.data);
+                    }
                 }
             } catch (err) {
                 console.error("Failed to update profile location:", err);
@@ -541,6 +757,161 @@ export default function HomeDashboard() {
                 </View>
             </TouchableOpacity>
         );
+    };
+
+    const handleSaveLocationClick = async (location) => {
+        const chosenLoc = {
+            address: location.locationName,
+            latitude: location.latitude,
+            longitude: location.longitude
+        };
+        const isWorker = user?.role === "worker" || user?.role === "admin";
+        if (isWorker) {
+            try {
+                let prof = workerProfile?.profession;
+                if (!prof) {
+                    const profileRes = await api.get("/api/workers/me");
+                    if (profileRes.data.success && profileRes.data.data) {
+                        prof = profileRes.data.data.profession;
+                        setWorkerProfile(profileRes.data.data);
+                    }
+                }
+
+                if (prof) {
+                    let serviceAreas = [];
+                    try {
+                        const geoRes = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?lat=${chosenLoc.latitude}&lon=${chosenLoc.longitude}&format=json`,
+                            {
+                                headers: {
+                                    "User-Agent": "ServiceHub-Mobile/1.0"
+                                }
+                            }
+                        );
+                        const geoData = await geoRes.json();
+                        const addr = geoData.address || {};
+                        const area = addr.suburb || addr.neighbourhood || addr.road || "Local Area";
+                        const city = addr.city || addr.town || addr.village || addr.county || "Local City";
+                        const state = addr.state || "Local State";
+                        serviceAreas = [{ area, city, state }];
+                    } catch (e) {
+                        console.error("Reverse geocoding service areas failed:", e);
+                    }
+
+                    const res = await api.post("/api/workers", {
+                        profession: prof,
+                        address: chosenLoc.address,
+                        latitude: chosenLoc.latitude,
+                        longitude: chosenLoc.longitude,
+                        serviceAreas: serviceAreas.length > 0 ? serviceAreas : undefined
+                    });
+                    if (res.data.success) {
+                        setWorkerProfile(res.data.data);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to update profile location:", err);
+            }
+        }
+        Toast.show({
+            type: "success",
+            text1: `Location updated to ${chosenLoc.address}`
+        });
+        setLocation(chosenLoc);
+        setShowLocationModal(false);
+    };
+
+    const handlePickOnMap = async () => {
+        setIsFetchingGps(true);
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            let lat = 28.6139; // Fallback to New Delhi
+            let lon = 77.2090;
+            let address = "New Delhi, India";
+
+            if (status === "granted") {
+                const gpsLocation = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced,
+                });
+                lat = gpsLocation.coords.latitude;
+                lon = gpsLocation.coords.longitude;
+
+                // Reverse geocode via Nominatim
+                try {
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+                        {
+                            headers: {
+                                "User-Agent": "ServiceHub-Mobile/1.0"
+                            }
+                        }
+                    );
+                    const geoData = await response.json();
+                    if (geoData && geoData.display_name) {
+                        address = geoData.display_name;
+                    }
+                } catch (e) {
+                    console.error("Nominatim reverse geocode in map picker failed:", e);
+                }
+            } else {
+                // If permission denied, use current location state if exists
+                if (location?.latitude && location?.longitude) {
+                    lat = location.latitude;
+                    lon = location.longitude;
+                    address = location.address;
+                }
+            }
+
+            setTempResolvedLocation({
+                latitude: lat,
+                longitude: lon,
+                address: address
+            });
+        } catch (err) {
+            console.error("Error picking on map:", err);
+            // Fallback
+            const fallbackLat = location?.latitude || 28.6139;
+            const fallbackLon = location?.longitude || 77.2090;
+            const fallbackAddress = location?.address || "Selected Location";
+            setTempResolvedLocation({
+                latitude: fallbackLat,
+                longitude: fallbackLon,
+                address: fallbackAddress
+            });
+        } finally {
+            setIsFetchingGps(false);
+        }
+    };
+
+    const handleMarkerDragEnd = async (coords) => {
+        const lat = coords.latitude;
+        const lon = coords.longitude;
+
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+                {
+                    headers: {
+                        "User-Agent": "ServiceHub-Mobile/1.0"
+                    }
+                }
+            );
+            const geoData = await response.json();
+            const newAddress = geoData?.display_name || `Coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+            setTempResolvedLocation({
+                latitude: lat,
+                longitude: lon,
+                address: newAddress
+            });
+        } catch (err) {
+            console.error("Nominatim reverse geocode on drag end failed:", err);
+            setTempResolvedLocation(prev => ({
+                ...prev,
+                latitude: lat,
+                longitude: lon,
+                address: prev?.address || `Coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`
+            }));
+        }
     };
 
     return (
@@ -804,23 +1175,66 @@ export default function HomeDashboard() {
                         <Ionicons name="options" size={20} color="#6366f1" />
                     </TouchableOpacity>
 
-                    {/* Promo Card Banner */}
-                    <View className="bg-indigo-600 rounded-2xl p-5 mt-6 relative overflow-hidden shadow-lg shadow-indigo-500/20">
-                        <View className="absolute right-[-10px] bottom-[-20px] opacity-15">
-                            <Ionicons name="construct" size={150} color="white" />
-                        </View>
-                        <View className="z-10 max-w-[70%]">
-                            <Text className="text-white text-xs font-extrabold bg-indigo-500/50 self-start px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                Special Offer
-                            </Text>
-                            <Text className="text-white text-xl font-black mt-2">
-                                Get 20% off on your first booking!
-                            </Text>
-                            <Text className="text-indigo-200 text-xs mt-1">
-                                Use code FIRST20 at checkout. Verified home experts at best pricing.
-                            </Text>
-                        </View>
-                    </View>
+                    {/* Catchphrase Sliding Fader Banner */}
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => {
+                            const slide = bannerSlides[currentSlideIndex];
+                            if (slide.query === "all") {
+                                router.push("/search");
+                            } else {
+                                handleCategoryCardPress(slide.query);
+                            }
+                        }}
+                        className="bg-indigo-600 h-32 border border-indigo-500/20  rounded-3xl p-5 mt-6 relative overflow-hidden flex justify-center shadow-lg shadow-indigo-500/20"
+                    >
+                        {/* Background subtle elements */}
+                        <View className="absolute right-[-10] top-[-10] w-32 h-32 bg-indigo-500/20 rounded-full blur-xl" />
+                        <View className="absolute left-[-10] bottom-[-20] w-24 h-24 bg-indigo-400/15 rounded-full blur-xl" />
+
+                        <Animated.View
+                            style={{
+                                opacity: fadeAnim,
+                                transform: [{ translateY: slideAnim }],
+                                flexDirection: "row",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                width: "100%"
+                            }}
+                        >
+                            <View className="flex-row items-center flex-1 mr-4">
+                                {/* Large Emoji / Image Badge with Glow */}
+                                <View className="w-14 h-14 bg-white/10 dark:bg-slate-900/60 border border-white/20 dark:border-slate-800 rounded-2xl items-center justify-center mr-4 shadow-sm overflow-hidden">
+                                    {bannerSlides[currentSlideIndex].image ? (
+                                        <Image
+                                            source={bannerSlides[currentSlideIndex].image}
+                                            className="w-10 h-10"
+                                            style={{ resizeMode: "contain" }}
+                                        />
+                                    ) : (
+                                        <Text className="text-3xl">
+                                            {bannerSlides[currentSlideIndex].emoji}
+                                        </Text>
+                                    )}
+                                </View>
+
+                                {/* Catchphrase text */}
+                                <View className="flex-1">
+                                    <Text className="text-white text-base font-extrabold leading-snug">
+                                        {bannerSlides[currentSlideIndex].text}
+                                    </Text>
+                                    <Text className="text-indigo-200 text-xs font-semibold mt-1">
+                                        Tap to find verified specialists
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Chevron Go Action button */}
+                            <View className="w-10 h-10 bg-white dark:bg-slate-900 rounded-full items-center justify-center shadow-md">
+                                <Ionicons name="arrow-forward" size={18} color="#4f46e5" />
+                            </View>
+                        </Animated.View>
+                    </TouchableOpacity>
 
                     {/* Categories Grid Header */}
                     <View className="flex-row justify-between items-center mt-8 mb-4">
@@ -843,26 +1257,32 @@ export default function HomeDashboard() {
                             <Text className="text-slate-500 dark:text-slate-400 text-sm mt-2 font-medium">{error}</Text>
                         </View>
                     ) : (
-                        <View className="flex-row flex-wrap gap-4 pb-2">
-                            {categories.slice(0, 8).map((cat) => {
-                                const style = getCategoryStyles(cat.name);
-                                return (
-                                    <TouchableOpacity
-                                        key={cat._id}
-                                        style={{ width: "47%" }}
-                                        onPress={() => router.push(`/category-workers?categoryId=${cat._id}&categoryName=${cat.name}`)}
-                                        className={`p-4 rounded-xl border ${style.bgColor} items-center justify-center gap-y-2 active:opacity-90`}
-                                    >
-                                        <View className="w-12 h-12 rounded-full items-center justify-center bg-slate-200/50 dark:bg-slate-900/40">
-                                            <Ionicons name={cat.icon || "construct-outline"} size={24} color={style.color} />
-                                        </View>
-                                        <Text className="text-slate-800 dark:text-white font-bold text-sm text-center">
-                                            {cat.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
+                        <ScrollView
+                            style={{ maxHeight: 470 }}
+                            nestedScrollEnabled={true}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <View className="flex-row flex-wrap gap-4 pb-2 justify-between">
+                                {categories.map((cat) => {
+                                    const style = getCategoryStyles(cat.name);
+                                    return (
+                                        <TouchableOpacity
+                                            key={cat._id}
+                                            style={{ width: "48%" }}
+                                            onPress={() => router.push(`/category-workers?categoryId=${cat._id}&categoryName=${cat.name}`)}
+                                            className={`p-4 rounded-xl border ${style.bgColor} items-center justify-center gap-y-2 active:opacity-90 mb-1`}
+                                        >
+                                            <View className="w-12 h-12 rounded-full items-center justify-center bg-slate-200/50 dark:bg-slate-900/40">
+                                                <Ionicons name={cat.icon || "construct-outline"} size={24} color={style.color} />
+                                            </View>
+                                            <Text className="text-slate-800 dark:text-white font-bold text-sm text-center">
+                                                {cat.name}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </ScrollView>
                     )}
 
                     {/* Nearby Workers Horizontal Scroll Section */}
@@ -945,6 +1365,42 @@ export default function HomeDashboard() {
                                 </Text>
                             </View>
 
+                            {/* Map Preview with draggable marker inside Location Modal */}
+                            {MapView ? (
+                                <View className="w-full h-[180] rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+                                    <MapView
+                                        style={{ width: "100%", height: "100%" }}
+                                        region={{
+                                            latitude: tempResolvedLocation.latitude,
+                                            longitude: tempResolvedLocation.longitude,
+                                            latitudeDelta: 0.015,
+                                            longitudeDelta: 0.015
+                                        }}
+                                    >
+                                        <Marker
+                                            coordinate={{
+                                                latitude: tempResolvedLocation.latitude,
+                                                longitude: tempResolvedLocation.longitude
+                                            }}
+                                            draggable
+                                            onDragEnd={(e) => handleMarkerDragEnd(e.nativeEvent.coordinate)}
+                                            title="Your Location"
+                                            description="Drag this pin to adjust your position"
+                                        />
+                                    </MapView>
+                                </View>
+                            ) : (
+                                <View className="w-full h-[80] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 items-center justify-center p-3">
+                                    <Ionicons name="map-outline" size={18} color="#6366f1" />
+                                    <Text className="text-slate-500 dark:text-slate-400 text-[10px] mt-1 text-center">
+                                        Map preview not supported on web.
+                                    </Text>
+                                    <Text className="text-slate-900 dark:text-white text-[9px] font-mono mt-0.5 text-center">
+                                        Lat: {tempResolvedLocation.latitude.toFixed(5)}, Lng: {tempResolvedLocation.longitude.toFixed(5)}
+                                    </Text>
+                                </View>
+                            )}
+
                             {/* Address labels select tags */}
                             <View className="w-full gap-y-2">
                                 <Text className="text-slate-500 dark:text-slate-400 text-xs font-semibold text-center">Save location as:</Text>
@@ -1026,31 +1482,7 @@ export default function HomeDashboard() {
                                                     className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 rounded-xl flex-row justify-between items-center"
                                                 >
                                                     <TouchableOpacity
-                                                        onPress={async () => {
-                                                            const chosenLoc = {
-                                                                address: loc.locationName,
-                                                                latitude: loc.latitude,
-                                                                longitude: loc.longitude
-                                                            };
-                                                            const isWorker = user?.role === "worker" || user?.role === "admin";
-                                                            if (isWorker && workerProfile) {
-                                                                try {
-                                                                    const res = await api.post("/api/workers", {
-                                                                        profession: workerProfile.profession,
-                                                                        address: chosenLoc.address,
-                                                                        latitude: chosenLoc.latitude,
-                                                                        longitude: chosenLoc.longitude
-                                                                    });
-                                                                    if (res.data.success) {
-                                                                        setWorkerProfile(res.data.data);
-                                                                    }
-                                                                } catch (err) {
-                                                                    console.error("Failed to update profile location:", err);
-                                                                }
-                                                            }
-                                                            setLocation(chosenLoc);
-                                                            setShowLocationModal(false);
-                                                        }}
+                                                        onPress={() => handleSaveLocationClick(loc)}
                                                         className="flex-row items-center flex-1 mr-2"
                                                     >
                                                         <View className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-900 items-center justify-center border border-slate-300 dark:border-slate-800 mr-3">
@@ -1102,6 +1534,22 @@ export default function HomeDashboard() {
                                     <>
                                         <Ionicons name="navigate" size={16} color="white" />
                                         <Text className="text-white font-bold ml-2 text-sm">Use Current Location (GPS)</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+
+                            {/* Map Picker Option */}
+                            <TouchableOpacity
+                                onPress={handlePickOnMap}
+                                disabled={isFetchingGps}
+                                className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 w-full py-3.5 rounded-xl flex-row items-center justify-center active:opacity-90 disabled:opacity-75 shadow-sm mt-2"
+                            >
+                                {isFetchingGps ? (
+                                    <ActivityIndicator size="small" color="#6366f1" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="map" size={16} color="#6366f1" />
+                                        <Text className="text-slate-900 dark:text-white font-bold ml-2 text-sm">Pick Location on Map</Text>
                                     </>
                                 )}
                             </TouchableOpacity>

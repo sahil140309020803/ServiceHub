@@ -1,5 +1,6 @@
 import slugify from "slugify";
 import Category from "../models/Category.js";
+import SearchHistory from "../models/SearchHistory.js";
 
 /**
  * Retrieve all categories
@@ -7,11 +8,41 @@ import Category from "../models/Category.js";
  */
 export const getCategories = async (req, res) => {
     try {
-        const categories = await Category.find().sort({ name: 1 });
+        const categories = await Category.find();
+        const searchHistories = await SearchHistory.find();
+
+        const categoriesWithPopularity = categories.map(category => {
+            const searchCount = searchHistories.filter(sh => {
+                if (sh.categoryId && sh.categoryId.toString() === category._id.toString()) {
+                    return true;
+                }
+                if (sh.searchText && sh.searchText.toLowerCase().includes(category.name.toLowerCase())) {
+                    return true;
+                }
+                return false;
+            }).length;
+
+            return {
+                ...category.toObject(),
+                searchCount
+            };
+        });
+
+        // Sort: active first, then popularity (searchCount) desc, then name asc
+        categoriesWithPopularity.sort((a, b) => {
+            if (a.isActive !== b.isActive) {
+                return a.isActive ? -1 : 1;
+            }
+            if (b.searchCount !== a.searchCount) {
+                return b.searchCount - a.searchCount;
+            }
+            return a.name.localeCompare(b.name);
+        });
+
         return res.status(200).json({
             success: true,
             message: "Categories retrieved successfully",
-            data: categories,
+            data: categoriesWithPopularity,
         });
     } catch (error) {
         console.error("Get Categories Error:", error);
