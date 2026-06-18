@@ -42,8 +42,14 @@ app.get("/", (req, res) => {
     });
 });
 
-const PORT = process.env.PORT || 5000
+import { fileURLToPath } from 'url';
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-})
+// Run server only when executed directly or when Vercel is not hosting
+if (process.argv[1] === fileURLToPath(import.meta.url) || (!process.env.VERCEL && process.env.NODE_ENV !== 'production')) {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
+
+export default app;
